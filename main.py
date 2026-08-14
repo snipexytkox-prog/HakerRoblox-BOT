@@ -253,7 +253,7 @@ class MainPanelView(ui.View):
         )
 
 
-# --- 2. SYSTEM TICKETÓW ---
+# --- 2. SYSTEM TICKETÓW (TYLKO ADMINISTRATOR MOŻE ZAMKNĄĆ) ---
 class TicketCloseView(ui.View):
 
     def __init__(self):
@@ -266,6 +266,13 @@ class TicketCloseView(ui.View):
         emoji="🔒",
     )
     async def close(self, interaction: discord.Interaction, button: ui.Button):
+        # Sprawdzanie czy użytkownik ma uprawnienia administratora
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message(
+                "❌ Nie masz uprawnień do zamykania ticketów.", ephemeral=True
+            )
+            return
+
         await interaction.response.defer(ephemeral=True)
         await interaction.channel.delete()
 
