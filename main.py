@@ -325,10 +325,9 @@ async def cmd_pomoc(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name="regulamin", description="[Info] Wyświetla oficjalny regulamin serwera")
+@bot.tree.command(name="regulamin", description="[Info] Wysyła oficjalny regulamin serwera na kanał")
 async def cmd_regulamin(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
-    
+    # Usunięto ephemeral=True, dzięki czemu wiadomość jest widoczna dla wszystkich
     embed = discord.Embed(
         title="📜 REGULAMIN SERWERA",
         description="⭐ **Baw się dobrze i szanuj innych!**",
@@ -349,7 +348,7 @@ async def cmd_regulamin(interaction: discord.Interaction):
     
     embed.set_footer(text="📄 Discord:\nWarunki: https://discord.com/terms\nPrywatność: https://discord.com/privacy\nWytyczne: https://discord.com/guidelines")
     
-    await interaction.followup.send(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
 
 @bot.tree.command(name="ban", description="[Moderacja] Banuje wybranego użytkownika")
