@@ -5,13 +5,16 @@ import discord
 from discord import app_commands, ui
 from discord.ext import commands
 
-TOKEN = "MTUzNzQ3OTEyOTgzMjc1OTMyNg.Gx70r_.uEjr-Ps84hnpZzkZFmz0DaEL0QDQWfHBy8IvpU"
-GUILD_ID = 1532698001963749457  # <--- WPISZ TUTAJ ID SWOJEGO SERWERA (same cyfry)
+# Bezpieczne pobieranie zmiennych z Railway
+TOKEN = os.getenv("TOKEN")
+try:
+    GUILD_ID = int(os.getenv("GUILD_ID", 0))
+except ValueError:
+    GUILD_ID = 0
 
 # Bazy danych w pamięci
 user_balances = {}
 user_warnings = {}
-
 
 class ZaawansowanyBot(commands.Bot):
     def __init__(self):
