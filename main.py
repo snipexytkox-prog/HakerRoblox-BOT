@@ -539,3 +539,4 @@ async def cmd_pay(interaction: discord.Interaction, użytkownik: discord.Member,
 
 if __name__ == "__main__":
     TOKEN = os.getenv("TOKEN")
+    bot.run(TOKEN)
