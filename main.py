@@ -5,7 +5,7 @@ import discord
 from discord import app_commands, ui
 from discord.ext import commands
 
-TOKEN = "MTUzNzQ3OTEyOTgzMjc1OTMyNg.GBe_tM.2qXXaH9UUnIAnViIPUGN65g93NInFOeLuIeiiU"
+TOKEN = "MTUzNzQ3OTEyOTgzMjc1OTMyNg.Gx70r_.uEjr-Ps84hnpZzkZFmz0DaEL0QDQWfHBy8IvpU"
 GUILD_ID = 1532698001963749457  # <--- WPISZ TUTAJ ID SWOJEGO SERWERA (same cyfry)
 
 # Bazy danych w pamięci
