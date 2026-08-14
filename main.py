@@ -5,16 +5,15 @@ import discord
 from discord import app_commands, ui
 from discord.ext import commands
 
-# Bezpieczne pobieranie zmiennych z Railway
-TOKEN = os.getenv("TOKEN")
-try:
-    GUILD_ID = int(os.getenv("GUILD_ID", 0))
-except ValueError:
-    GUILD_ID = 0
+# Pobieranie danych ze zmiennych środowiskowych Railway
+TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID_STR = os.getenv("GUILD_ID")
+GUILD_ID = int(GUILD_ID_STR) if GUILD_ID_STR else 0
 
 # Bazy danych w pamięci
 user_balances = {}
 user_warnings = {}
+
 
 class ZaawansowanyBot(commands.Bot):
     def __init__(self):
@@ -31,11 +30,15 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(TicketPanelView())
         self.add_view(TicketCloseView())
 
-        # Natychmiastowa synchronizacja komend pod Twój serwer
-        guild = discord.Object(id=GUILD_ID)
-        self.tree.copy_global_to(guild=guild)
-        await self.tree.sync(guild=guild)
-        print("✅ Pomyślnie zsynchronizowano natychmiastowe komendy dla serwera testowego!")
+        if GUILD_ID:
+            # Natychmiastowa synchronizacja komend pod Twój serwer
+            guild = discord.Object(id=GUILD_ID)
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+            print("✅ Pomyślnie zsynchronizowano natychmiastowe komendy dla serwera testowego!")
+        else:
+            print("⚠️ OSTRZEŻENIE: Brak zmiennej GUILD_ID! Synchronizacja globalna może potrwać do godziny.")
+            await self.tree.sync()
 
 
 bot = ZaawansowanyBot()
@@ -68,10 +71,9 @@ class ZamowienieModal(ui.Modal, title="FORMULARZ ZAMÓWIENIA USŁUGI"):
         cena_ostateczna = self.cena_wyjsciowa
         rabat_info = "Brak"
 
-        # Sprawdzanie kodu rabatowego HakerRoblox (5% zniżki)
         wpisany_kod = self.kod_znizkowy.value.strip()
         if wpisany_kod.lower() == "hakerroblox":
-            cena_ostateczna = self.cena_wyjsciowa * 0.95  # 5% zniżki
+            cena_ostateczna = self.cena_wyjsciowa * 0.95
             rabat_info = "HakerRoblox (-5% zniżki)"
         elif wpisany_kod != "":
             rabat_info = f"Nieznany kod ({wpisany_kod})"
@@ -223,7 +225,7 @@ async def on_message(message):
 
 
 # =========================================================================
-# --- 5. KOMENDY (W CAŁOŚCI PO POLSKU) ---
+# --- 5. KOMENDY ---
 # =========================================================================
 
 @bot.tree.command(name="wyslij-panel", description="[Admin] Wysyła główny panel sklepu Hakerolandia")
@@ -293,7 +295,7 @@ async def cmd_weryfikacja_setup(interaction: discord.Interaction, rola_id: str):
         rid = int(rola_id)
     except ValueError:
         await interaction.followup.send("❌ Podaj poprawne ID numeryczne roli!", ephemeral=True); return
-    view = WeryfikacjaView(rid);
+    view = WeryfikacjaView(rid)
     bot.add_view(view)
     embed = discord.Embed(title="🛡️ SYSTEM WERYFIKACJI",
                           description="Kliknij poniższy przycisk, aby przejść weryfikację antybotową.",
@@ -314,12 +316,39 @@ async def cmd_pomoc(interaction: discord.Interaction):
     embed.add_field(name="🛡️ Moderacja", value="`/ban`, `/kick`, `/mute`, `/unmute`, `/czysc`, `/warn`, `/ostrzeżenia`",
                     inline=False)
     embed.add_field(name="📊 Informacje",
-                    value="`/ping`, `/serwer-info`, `/użytkownik-info`, `/bot-info`, `/avatar`, `/liczba-osób`",
+                    value="`/ping`, `/serwer-info`, `/użytkownik-info`, `/bot-info`, `/avatar`, `/liczba-osób`, `/regulamin`",
                     inline=False)
     embed.add_field(name="🎮 Zabawa (4Fun)",
                     value="`/8ball`, `/rzut-moneta`, `/losuj-liczbe`, `/ocena`, `/żart`, `/przytul`, `/ciastko`",
                     inline=False)
     embed.add_field(name="💰 Ekonomia", value="`/portfel`, `/praca`, `/codzienna-nagroda`, `/przelej`", inline=False)
+    await interaction.followup.send(embed=embed, ephemeral=True)
+
+
+@bot.tree.command(name="regulamin", description="[Info] Wyświetla oficjalny regulamin serwera")
+async def cmd_regulamin(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    
+    embed = discord.Embed(
+        title="📜 REGULAMIN SERWERA",
+        description="⭐ **Baw się dobrze i szanuj innych!**",
+        color=discord.Color.gold()
+    )
+    
+    embed.add_field(name="🤝 1. Szanuj innych", value="Nie wyzywaj, nie obrażaj i nie prowokuj. Zakaz mowy nienawiści, rasizmu i dyskryminacji.", inline=False)
+    embed.add_field(name="🛡️ 2. Szanuj administrację", value="Wykonuj polecenia administracji. Jeśli nie zgadzasz się z decyzją, zgłoś problem przez ticket.", inline=False)
+    embed.add_field(name="💬 3. Nie spamuj", value="Zakaz spamu, floodu, bezsensownego pingowania oraz pisania nie na temat. Za spam grozi 1 godzina przerwy (mute).", inline=False)
+    embed.add_field(name="📢 4. Zakaz reklam i własnych serwerów", value="Nie reklamuj innych serwerów, kanałów, stron ani usług bez zgody administracji. Reklamowanie własnego serwera Discord jest zabronione — wysyłanie zaproszeń do własnych serwerów = ban. Zakaz podejrzanych linków, cheatów i exploitów.", inline=False)
+    embed.add_field(name="🔞 5. Zakaz treści 18+", value="Nie wysyłaj treści NSFW, seksualnych, brutalnych ani innych nieodpowiednich materiałów.", inline=False)
+    embed.add_field(name="🔐 6. Chroń prywatność", value="Nie udostępniaj danych swoich ani innych osób. Zakaz publikowania prywatnych zdjęć i podszywania się pod innych.", inline=False)
+    embed.add_field(name="🎮 7. Graj uczciwie", value="Zakaz cheatów, exploitów i wykorzystywania błędów w celu uzyskania przewagi.", inline=False)
+    embed.add_field(name="🧵 8. Zakaz tworzenia wątków", value="Tworzenie wątków na serwerze jest zabronione. Za utworzenie wątku grozi kick.", inline=False)
+    embed.add_field(name="🎫 9. Zgłoszenia", value="Problemy i skargi zgłaszaj przez ticket. Nie oznaczaj administracji bez ważnego powodu.", inline=False)
+    embed.add_field(name="⚠️ 10. Kary", value="Ostrzeżenie → Mute → Kick → Ban. Za poważne przewinienia kara może zostać nadana od razu. Omijanie bana = ban permanentny.", inline=False)
+    embed.add_field(name="✅ 11. Akceptacja", value="Dołączając na serwer, akceptujesz regulamin i zobowiązujesz się go przestrzegać.", inline=False)
+    
+    embed.set_footer(text="📄 Discord:\nWarunki: https://discord.com/terms\nPrywatność: https://discord.com/privacy\nWytyczne: https://discord.com/guidelines")
+    
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 
@@ -541,5 +570,7 @@ async def cmd_pay(interaction: discord.Interaction, użytkownik: discord.Member,
 
 
 if __name__ == "__main__":
-    TOKEN = os.getenv("TOKEN")
-    bot.run(TOKEN)
+    if not TOKEN:
+        print("❌ BŁĄD: Brak zmiennej środowiskowej DISCORD_TOKEN!")
+    else:
+        bot.run(TOKEN)
