@@ -121,13 +121,13 @@ async def on_member_join(member: discord.Member):
 
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
-        super().__init__(title="POTRZEBNE INFORMACJE.")
+        super().__init__(title="Potrzebne informacje.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
     nick_dc = ui.TextInput(label="JAKI JEST TWOJ NICK NA DISCORDZIE:", placeholder="Podaj swoj nick z discorda.", required=True, max_length=50)
     platnosc_text = ui.TextInput(label="WYBIERZ PLATNOSC (BLIK / REVOLUT):", placeholder="Wpisz wybrana metode platnosci", required=True, max_length=30)
-    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIZKOWY:", placeholder="Przyklad: HAKERROBLOX", required=False, max_length=20)
+    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIZKOWY:", placeholder="Przyklad: HakerRoblox15", required=False, max_length=20)
     uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMOWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
 
     async def on_submit(self, interaction: discord.Interaction):
