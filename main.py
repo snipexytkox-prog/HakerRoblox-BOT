@@ -65,7 +65,7 @@ class ZamowienieModal(ui.Modal):
     )
 
     platnosc_text = ui.TextInput(
-        label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT):",
+        label="WPISZ PŁATNOŚĆ (BLIK / REVOLUT):",
         placeholder="Wpisz wybraną metodę płatności",
         required=True,
         max_length=30,
@@ -73,7 +73,7 @@ class ZamowienieModal(ui.Modal):
 
     kod_znizkowy = ui.TextInput(
         label="CZY POSIADASZ KOD ZNIŻKOWY:",
-        placeholder="Przykład: HAKERROBLOX",
+        placeholder="Przykład: HakerRoblox15",
         required=False,
         max_length=20,
     )
