@@ -122,22 +122,24 @@ async def on_member_join(member: discord.Member):
 # --- 1. SYSTEM SKLEPU I FORMULARZ ZAMÓWIENIA ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
-        super().__init__(title="Potrzebne informacje.")
+        super().__init__(title="Potrzebne informacje")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
     nick_dc = ui.TextInput(
-        label="JAKI JEST TWOJ NICK NA DISCORDZIE:", 
-        placeholder="Podaj swoj nick z discorda", 
+        label="TWÓJ NICK NA DISCORDZIE:", 
+        placeholder="Podaj swój nick z discorda", 
         required=True, 
         max_length=50
     )
+    
     platnosc_text = ui.TextInput(
-        label="JAKĄ METODĄ PŁATNOŚCI ZAPŁACIĆ (BLIK / REVOLUT):", 
+        label="METODA PŁATNOŚCI (BLIK / REVOLUT):", 
         placeholder="Wpisz wybraną metodę płatności", 
         required=True, 
         max_length=50
     )
+    
     uwagi = ui.TextInput(
         label="DODATKOWE UWAGI DO ZAMÓWIENIA:", 
         placeholder="Opisz swoje wymagania.", 
@@ -149,24 +151,30 @@ class ZamowienieModal(ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
-        embed = discord.Embed(title="🟢 POTWIERDZENIE ZAMOWIENIA", description="Twoje zgloszenie zamowienia zostalo zapisane.", color=discord.Color.green())
-        embed.add_field(name="📦 Wybrana usluga:", value=f"• **1x {self.pakiet_nazwa}**", inline=False)
-        embed.add_field(name="💰 Cena:", value=f"**{self.cena_wyjsciowa:.2f} zl**", inline=False)
+        embed = discord.Embed(
+            title="🟢 POTWIERDZENIE ZAMÓWIENIA", 
+            description="Twoje zgłoszenie zamówienia zostało zapisane.", 
+            color=discord.Color.green()
+        )
+        embed.add_field(name="📦 Wybrana usługa:", value=f"• **1x {self.pakiet_nazwa}**", inline=False)
+        embed.add_field(name="💰 Cena:", value=f"**{self.cena_wyjsciowa:.2f} zł**", inline=False)
         embed.add_field(name="👤 Nick Discord:", value=self.nick_dc.value, inline=True)
-        embed.add_field(name="💳 Platnosc:", value=self.platnosc_text.value, inline=True)
+        embed.add_field(name="💳 Płatność:", value=self.platnosc_text.value, inline=True)
+        
         if self.uwagi.value:
             embed.add_field(name="📝 Dodatkowe uwagi:", value=self.uwagi.value, inline=False)
 
         view = ui.View()
-        view.add_item(ui.Button(label="Oplac zamowienie", url="https://tipply.pl/@hakerroblox", style=discord.ButtonStyle.link, emoji="💳"))
+        view.add_item(ui.Button(label="Opłać zamówienie", url="https://tipply.pl/@hakerroblox", style=discord.ButtonStyle.link, emoji="💳"))
+        
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 class PakietSelect(ui.Select):
     def __init__(self):
         opcje = [
-            discord.SelectOption(label="Pakiet START — 19,99 zl", description="Max 10 kategorii / 30 kanalow", emoji="🟢", value="start"),
-            discord.SelectOption(label="Pakiet BASIC — 39,99 zl", description="Max 20 kategorii / 50 kanalow", emoji="🔵", value="basic"),
-            discord.SelectOption(label="Pakiet PREMIUM — 69,99 zl", description="Nielimitowane kategorie i kanaly", emoji="🟣", value="premium"),
+            discord.SelectOption(label="Pakiet START — 19,99 zł", description="Max 10 kategorii / 30 kanałów", emoji="🟢", value="start"),
+            discord.SelectOption(label="Pakiet BASIC — 39,99 zł", description="Max 20 kategorii / 50 kanałów", emoji="🔵", value="basic"),
+            discord.SelectOption(label="Pakiet PREMIUM — 69,99 zł", description="Nielimitowane kategorie i kanały", emoji="🟣", value="premium"),
         ]
         super().__init__(placeholder="Wybierz pakiet z menu...", min_values=1, max_values=1, options=opcje, custom_id="wybor_pakietu_select")
 
@@ -188,11 +196,11 @@ class MainPanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Zloz zamowienie", style=discord.ButtonStyle.secondary, custom_id="przycisk_zamowienia", emoji="🛒")
+    @ui.button(label="Złóż zamówienie", style=discord.ButtonStyle.secondary, custom_id="przycisk_zamowienia", emoji="🛒")
     async def start_order(self, interaction: discord.Interaction, button: ui.Button):
         embed = discord.Embed(
             title="🟢 KATALOG OFERT — HAKEROLANDIA",
-            description="Wybierz interesujacy Cie pakiet z menu ponizej:",
+            description="Wybierz interesujący Cię pakiet z menu poniżej:",
             color=discord.Color.green(),
         )
         await interaction.response.send_message(embed=embed, view=WyborOfertyView(), ephemeral=True)
@@ -216,7 +224,7 @@ class TicketPanelView(ui.View):
         super().__init__(timeout=None)
         self.rola_id = rola_id
 
-    @ui.button(label="Otworz Ticket", style=discord.ButtonStyle.primary, custom_id="otworz_ticket_btn", emoji="📩")
+    @ui.button(label="Otwórz Ticket", style=discord.ButtonStyle.primary, custom_id="otworz_ticket_btn", emoji="📩")
     async def open_t(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.defer(ephemeral=True)
         overwrites = {
@@ -236,7 +244,7 @@ class TicketPanelView(ui.View):
 # --- 3. WERYFIKACJA CAPTCHA ---
 class CaptchaModal(ui.Modal):
     def __init__(self, rola_id: int, correct_answer: int, equation_str: str):
-        super().__init__(title="WERYFIKACJA BEZPIECZENSTWA")
+        super().__init__(title="WERYFIKACJA BEZPIECZEŃSTWA")
         self.rola_id, self.correct_answer = rola_id, correct_answer
         self.answer_input = ui.TextInput(label=f"Wynik: {equation_str}", placeholder="Wpisz wynik", required=True, max_length=5)
         self.add_item(self.answer_input)
@@ -261,7 +269,7 @@ class WeryfikacjaView(ui.View):
         super().__init__(timeout=None)
         self.rola_id = rola_id
 
-    @ui.button(label="Zweryfikuj sie", style=discord.ButtonStyle.success, custom_id="przycisk_weryfikacji", emoji="🛡️")
+    @ui.button(label="Zweryfikuj się", style=discord.ButtonStyle.success, custom_id="przycisk_weryfikacji", emoji="🛡️")
     async def verify(self, interaction: discord.Interaction, button: ui.Button):
         n1, n2 = random.randint(1, 10), random.randint(1, 10)
         await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
@@ -269,11 +277,11 @@ class WeryfikacjaView(ui.View):
 # --- 4. SYSTEM OPINIE ---
 class OpinieModal(ui.Modal):
     def __init__(self):
-        super().__init__(title="WYSTAW OPINIE")
+        super().__init__(title="WYSTAW OPINIĘ")
 
-    wykonawca = ui.TextInput(label="WYKONAWCA USLUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
-    tresc = ui.TextInput(label="TRESC OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
-    jakosc = ui.TextInput(label="JAKOSC I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
+    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
+    tresc = ui.TextInput(label="TREŚĆ OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
+    jakosc = ui.TextInput(label="JAKOŚĆ I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
     czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -311,7 +319,7 @@ class OpiniePanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Wystaw Opinie", style=discord.ButtonStyle.success, custom_id="przycisk_wystaw_opinie", emoji="⭐")
+    @ui.button(label="Wystaw Opinię", style=discord.ButtonStyle.success, custom_id="przycisk_wystaw_opinie", emoji="⭐")
     async def open_opinie_modal(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(OpinieModal())
 
