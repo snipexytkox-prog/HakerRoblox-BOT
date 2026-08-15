@@ -125,8 +125,8 @@ class ZamowienieModal(ui.Modal):
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
-    nick_dc = ui.TextInput(label="JAKI JEST TWOJ NICK NA DISCORDZIE:", placeholder="Podaj swoj nick z @.", required=True, max_length=50)
-    platnosc_text = ui.TextInput(label="WYBIERZ PLATNOSC (BLIK / REVOLUT / PSC):", placeholder="Wpisz wybrana metode platnosci", required=True, max_length=30)
+    nick_dc = ui.TextInput(label="JAKI JEST TWOJ NICK NA DISCORDZIE:", placeholder="Podaj swoj nick z discorda.", required=True, max_length=50)
+    platnosc_text = ui.TextInput(label="WYBIERZ PLATNOSC (BLIK / REVOLUT):", placeholder="Wpisz wybrana metode platnosci", required=True, max_length=30)
     kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIZKOWY:", placeholder="Przyklad: HAKERROBLOX", required=False, max_length=20)
     uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMOWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
 
