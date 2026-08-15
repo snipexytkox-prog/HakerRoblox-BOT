@@ -36,7 +36,7 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(MainPanelView())
         self.add_view(WyborOfertyView())
         self.add_view(TicketCloseView())
-        self.add_view(OpiniePanelView())  # Rejestracja stałego widoku panelu opinii
+        self.add_view(OpiniePanelView())
         
         check_youtube_videos.start()
 
@@ -54,7 +54,6 @@ bot = ZaawansowanyBot()
 async def on_ready():
     print(f"🤖 Zalogowano jako: {bot.user}")
 
-# --- PĘTLA SPRAWDZAJĄCA NOWE FILMY NA YT ---
 @tasks.loop(minutes=1)
 async def check_youtube_videos():
     for guild_id, data in yt_subscriptions.items():
@@ -84,10 +83,8 @@ async def check_youtube_videos():
                         url=video_link,
                         color=discord.Color.from_rgb(255, 0, 0),
                     )
-
                     thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
                     embed.set_image(url=thumbnail_url)
-
                     embed.set_author(
                         name=yt_kanal,
                         icon_url="https://www.iconpacks.net/icons/2/free-youtube-logo-icon-2431-thumb.png",
@@ -105,7 +102,6 @@ async def check_youtube_videos():
 async def before_check_youtube():
     await bot.wait_until_ready()
 
-# --- POWITANIE NA PRIV (DM) PO DOŁĄCZENIU ---
 @bot.event
 async def on_member_join(member: discord.Member):
     try:
@@ -123,17 +119,16 @@ async def on_member_join(member: discord.Member):
     except discord.Forbidden:
         pass
 
-# --- 1. SYSTEM SKLEPU I MODAL ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
         super().__init__(title="POTRZEBNE INFORMACJE.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
-    nick_dc = ui.TextInput(label="JAKI JEST TWÓJ NICK NA DISCORDZIE:", placeholder="Podaj swój nick z @.", required=True, max_length=50)
-    platnosc_text = ui.TextInput(label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT / PSC):", placeholder="Wpisz wybraną metodę płatności", required=True, max_length=30)
-    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIŻKOWY:", placeholder="Przykład: HAKERROBLOX", required=False, max_length=20)
-    uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMÓWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
+    nick_dc = ui.TextInput(label="JAKI JEST TWOJ NICK NA DISCORDZIE:", placeholder="Podaj swoj nick z @.", required=True, max_length=50)
+    platnosc_text = ui.TextInput(label="WYBIERZ PLATNOSC (BLIK / REVOLUT / PSC):", placeholder="Wpisz wybrana metode platnosci", required=True, max_length=30)
+    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIZKOWY:", placeholder="Przyklad: HAKERROBLOX", required=False, max_length=20)
+    uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMOWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -143,27 +138,27 @@ class ZamowienieModal(ui.Modal):
 
         if self.kod_znizkowy.value.strip().lower() == "hakerroblox":
             cena_ostateczna = self.cena_wyjsciowa * 0.95
-            rabat_info = "HakerRoblox (-5% zniżki)"
+            rabat_info = "HakerRoblox (-5% znizki)"
 
-        embed = discord.Embed(title="🟢 POTWIERDZENIE ZAMÓWIENIA", description="Twoje zgłoszenie zamówienia zostało zapisane.", color=discord.Color.green())
-        embed.add_field(name="📦 Wybrana usługa:", value=f"• **1x {self.pakiet_nazwa}**", inline=False)
-        embed.add_field(name="💰 Cena:", value=f"**{cena_ostateczna:.2f} zł**", inline=False)
+        embed = discord.Embed(title="🟢 POTWIERDZENIE ZAMOWIENIA", description="Twoje zgloszenie zamowienia zostalo zapisane.", color=discord.Color.green())
+        embed.add_field(name="📦 Wybrana usluga:", value=f"• **1x {self.pakiet_nazwa}**", inline=False)
+        embed.add_field(name="💰 Cena:", value=f"**{cena_ostateczna:.2f} zl**", inline=False)
         embed.add_field(name="👤 Nick Discord:", value=self.nick_dc.value, inline=True)
-        embed.add_field(name="💳 Płatność:", value=wybrana_platnosc, inline=True)
+        embed.add_field(name="💳 Platnosc:", value=wybrana_platnosc, inline=True)
         embed.add_field(name="🎟️ Kod rabatowy:", value=rabat_info, inline=False)
         if self.uwagi.value:
             embed.add_field(name="📝 Dodatkowe uwagi:", value=self.uwagi.value, inline=False)
 
         view = ui.View()
-        view.add_item(ui.Button(label="Opłać zamówienie", url="https://tipply.pl/@hakerroblox", style=discord.ButtonStyle.link, emoji="💳"))
+        view.add_item(ui.Button(label="Oplac zamowienie", url="https://tipply.pl/@hakerroblox", style=discord.ButtonStyle.link, emoji="💳"))
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 class PakietSelect(ui.Select):
     def __init__(self):
         opcje = [
-            discord.SelectOption(label="Pakiet START — 19,99 zł", description="Max 10 kategorii / 30 kanałów", emoji="🟢", value="start"),
-            discord.SelectOption(label="Pakiet BASIC — 39,99 zł", description="Max 20 kategorii / 50 kanałów", emoji="🔵", value="basic"),
-            discord.SelectOption(label="Pakiet PREMIUM — 69,99 zł", description="Nielimitowane kategorie i kanały", emoji="🟣", value="premium"),
+            discord.SelectOption(label="Pakiet START — 19,99 zl", description="Max 10 kategorii / 30 kanalow", emoji="🟢", value="start"),
+            discord.SelectOption(label="Pakiet BASIC — 39,99 zl", description="Max 20 kategorii / 50 kanalow", emoji="🔵", value="basic"),
+            discord.SelectOption(label="Pakiet PREMIUM — 69,99 zl", description="Nielimitowane kategorie i kanaly", emoji="🟣", value="premium"),
         ]
         super().__init__(placeholder="Wybierz pakiet z menu...", min_values=1, max_values=1, options=opcje, custom_id="wybor_pakietu_select")
 
@@ -185,16 +180,15 @@ class MainPanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Złóż zamówienie", style=discord.ButtonStyle.secondary, custom_id="przycisk_zamowienia", emoji="🛒")
+    @ui.button(label="Zloz zamowienie", style=discord.ButtonStyle.secondary, custom_id="przycisk_zamowienia", emoji="🛒")
     async def start_order(self, interaction: discord.Interaction, button: ui.Button):
         embed = discord.Embed(
             title="🟢 KATALOG OFERT — HAKEROLANDIA",
-            description="Wybierz interesujący Cię pakiet z menu poniżej:",
+            description="Wybierz interesujacy Cie pakiet z menu ponizej:",
             color=discord.Color.green(),
         )
         await interaction.response.send_message(embed=embed, view=WyborOfertyView(), ephemeral=True)
 
-# --- 2. SYSTEM TICKETÓW ---
 class TicketCloseView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -213,7 +207,7 @@ class TicketPanelView(ui.View):
         super().__init__(timeout=None)
         self.rola_id = rola_id
 
-    @ui.button(label="Otwórz Ticket", style=discord.ButtonStyle.primary, custom_id="otworz_ticket_btn", emoji="📩")
+    @ui.button(label="Otworz Ticket", style=discord.ButtonStyle.primary, custom_id="otworz_ticket_btn", emoji="📩")
     async def open_t(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.defer(ephemeral=True)
         overwrites = {
@@ -230,10 +224,9 @@ class TicketPanelView(ui.View):
         await ch.send(embed=embed, view=TicketCloseView())
         await interaction.followup.send(f"✅ Utworzono ticket: {ch.mention}", ephemeral=True)
 
-# --- 3. WERYFIKACJA CAPTCHA ---
 class CaptchaModal(ui.Modal):
     def __init__(self, rola_id: int, correct_answer: int, equation_str: str):
-        super().__init__(title="WERYFIKACJA BEZPIECZEŃSTWA")
+        super().__init__(title="WERYFIKACJA BEZPIECZENSTWA")
         self.rola_id, self.correct_answer = rola_id, correct_answer
         self.answer_input = ui.TextInput(label=f"Wynik: {equation_str}", placeholder="Wpisz wynik", required=True, max_length=5)
         self.add_item(self.answer_input)
@@ -258,20 +251,18 @@ class WeryfikacjaView(ui.View):
         super().__init__(timeout=None)
         self.rola_id = rola_id
 
-    @ui.button(label="Zweryfikuj się", style=discord.ButtonStyle.success, custom_id="przycisk_weryfikacji", emoji="🛡️")
+    @ui.button(label="Zweryfikuj sie", style=discord.ButtonStyle.success, custom_id="przycisk_weryfikacji", emoji="🛡️")
     async def verify(self, interaction: discord.Interaction, button: ui.Button):
         n1, n2 = random.randint(1, 10), random.randint(1, 10)
         await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
 
-# --- 4. SYSTEM OPINIE (MODAL I PANEL) ---
 class OpinieModal(ui.Modal):
     def __init__(self):
-        super().__init__(title="WYSTAW OPINIĘ")
+        super().__init__(title="WYSTAW OPINIE")
 
-    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. V
-    HakerRoblox (haker.roblox)", required=True, max_length=100)
-    tresc = ui.TextInput(label="TREŚĆ OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
-    jakosc = ui.TextInput(label="JAKOŚĆ I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
+    wykonawca = ui.TextInput(label="WYKONAWCA USLUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
+    tresc = ui.TextInput(label="TRESC OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
+    jakosc = ui.TextInput(label="JAKOSC I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
     czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -309,11 +300,10 @@ class OpiniePanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Wystaw Opinię", style=discord.ButtonStyle.success, custom_id="przycisk_wystaw_opinie", emoji="⭐")
+    @ui.button(label="Wystaw Opinie", style=discord.ButtonStyle.success, custom_id="przycisk_wystaw_opinie", emoji="⭐")
     async def open_opinie_modal(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(OpinieModal())
 
-# --- 5. KOMENDY SLASH ---
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
     await interaction.response.send_modal(OpinieModal())
