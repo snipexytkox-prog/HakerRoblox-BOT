@@ -59,7 +59,7 @@ class ZaawansowanyBot(commands.Bot):
     async def setup_hook(self):
         self.add_view(MainPanelView())
         self.add_view(WyborOfertyView())
-        self.add_view(TicketPanelView())
+        # Widoki bez argumentów globalnych dodajemy standardowo
         self.add_view(TicketCloseView())
 
         if GUILD_ID:
@@ -253,7 +253,7 @@ class MainPanelView(ui.View):
         )
 
 
-# --- 2. SYSTEM TICKETÓW (TYLKO ADMINISTRATOR MOŻE ZAMKNĄĆ) ---
+# --- 2. SYSTEM TICKETÓW (Z OBSŁUGĄ ROLI) ---
 class TicketCloseView(ui.View):
 
     def __init__(self):
@@ -279,8 +279,9 @@ class TicketCloseView(ui.View):
 
 class TicketPanelView(ui.View):
 
-    def __init__(self):
+    def __init__(self, rola_id: int = None):
         super().__init__(timeout=None)
+        self.rola_id = rola_id
 
     @ui.button(
         label="Otwórz Ticket",
@@ -290,15 +291,27 @@ class TicketPanelView(ui.View):
     )
     async def open_t(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.defer(ephemeral=True)
+
+        # Ustawienia uprawnień dla kanału ticketu
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(
+                read_messages=False
+            ),
+            interaction.user: discord.PermissionOverwrite(read_messages=True),
+        }
+
+        # Jeśli skonfigurowano rola_id, dodajemy jej uprawnienia do widoczności ticketu
+        if self.rola_id:
+            rola = interaction.guild.get_role(self.rola_id)
+            if rola:
+                overwrites[rola] = discord.PermissionOverwrite(
+                    read_messages=True, send_messages=True
+                )
+
         ch = await interaction.guild.create_text_channel(
-            f"ticket-{interaction.user.name}",
-            overwrites={
-                interaction.guild.default_role: discord.PermissionOverwrite(
-                    read_messages=False
-                ),
-                interaction.user: discord.PermissionOverwrite(read_messages=True),
-            },
+            f"ticket-{interaction.user.name}", overwrites=overwrites
         )
+
         embed = discord.Embed(
             title="CENTRUM POMOCY — HAKEROLANDIA",
             description=f"Witaj {interaction.user.mention}! Masz pytania lub chcesz zamówić serwer? Administracja odpowie najszybciej jak to możliwe.",
@@ -461,15 +474,34 @@ async def cmd_wyslij_panel(interaction: discord.Interaction):
 @bot.tree.command(
     name="ticket-setup", description="[Właściciel] Wysyła panel ticketów pomocy"
 )
+@app_commands.describe(
+    rola_id="ID roli administracyjnej, która ma widzieć tickety (opcjonalnie)"
+)
 @is_owner()
-async def cmd_ticket_setup(interaction: discord.Interaction):
+async def cmd_ticket_setup(
+    interaction: discord.Interaction, rola_id: str = None
+):
     await interaction.response.defer(ephemeral=True)
+
+    rid = None
+    if rola_id:
+        try:
+            rid = int(rola_id)
+        except ValueError:
+            await interaction.followup.send(
+                "❌ Podaj poprawne numeryczne ID roli!", ephemeral=True
+            )
+            return
+
+    view = TicketPanelView(rid)
+    bot.add_view(view)
+
     embed = discord.Embed(
         title="📩 CENTRUM WSPARCIA — HAKEROLANDIA",
         description="Kliknij przycisk poniżej, aby otworzyć ticket i skontaktować się z administracją.",
         color=discord.Color.blue(),
     )
-    await interaction.channel.send(embed=embed, view=TicketPanelView())
+    await interaction.channel.send(embed=embed, view=view)
     await interaction.followup.send(
         "✅ Pomyślnie wysłano panel ticketów.", ephemeral=True
     )
