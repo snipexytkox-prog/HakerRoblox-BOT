@@ -65,7 +65,7 @@ class ZamowienieModal(ui.Modal):
     )
 
     platnosc_text = ui.TextInput(
-        label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT / PSC):",
+        label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT):",
         placeholder="Wpisz wybraną metodę płatności",
         required=True,
         max_length=30,
