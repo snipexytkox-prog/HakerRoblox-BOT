@@ -119,33 +119,41 @@ async def on_member_join(member: discord.Member):
     except discord.Forbidden:
         pass
 
+# --- 1. SYSTEM SKLEPU I FORMULARZ ZAMÓWIENIA ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
         super().__init__(title="Potrzebne informacje.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
-    nick_dc = ui.TextInput(label="JAKI JEST TWOJ NICK NA DISCORDZIE:", placeholder="Podaj swoj nick z discorda.", required=True, max_length=50)
-    platnosc_text = ui.TextInput(label="WYBIERZ PLATNOSC (BLIK / REVOLUT):", placeholder="Wpisz wybraną metodę płatności", required=True, max_length=30)
-    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIZKOWY:", placeholder="Przyklad: HakerRoblox15", required=False, max_length=20)
-    uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMOWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
+    nick_dc = ui.TextInput(
+        label="JAKI JEST TWOJ NICK NA DISCORDZIE:", 
+        placeholder="Podaj swoj nick z discorda", 
+        required=True, 
+        max_length=50
+    )
+    platnosc_text = ui.TextInput(
+        label="JAKĄ METODĄ PŁATNOŚCI ZAPŁACIĆ (BLIK / REVOLUT):", 
+        placeholder="Wpisz wybraną metodę płatności", 
+        required=True, 
+        max_length=50
+    )
+    uwagi = ui.TextInput(
+        label="DODATKOWE UWAGI DO ZAMÓWIENIA:", 
+        placeholder="Opisz swoje wymagania.", 
+        style=discord.TextStyle.paragraph, 
+        required=False, 
+        max_length=200
+    )
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        wybrana_platnosc = self.platnosc_text.value.strip()
-        cena_ostateczna = self.cena_wyjsciowa
-        rabat_info = "Brak"
-
-        if self.kod_znizkowy.value.strip().lower() == "hakerroblox":
-            cena_ostateczna = self.cena_wyjsciowa * 0.95
-            rabat_info = "HakerRoblox (-5% znizki)"
-
+        
         embed = discord.Embed(title="🟢 POTWIERDZENIE ZAMOWIENIA", description="Twoje zgloszenie zamowienia zostalo zapisane.", color=discord.Color.green())
         embed.add_field(name="📦 Wybrana usluga:", value=f"• **1x {self.pakiet_nazwa}**", inline=False)
-        embed.add_field(name="💰 Cena:", value=f"**{cena_ostateczna:.2f} zl**", inline=False)
+        embed.add_field(name="💰 Cena:", value=f"**{self.cena_wyjsciowa:.2f} zl**", inline=False)
         embed.add_field(name="👤 Nick Discord:", value=self.nick_dc.value, inline=True)
-        embed.add_field(name="💳 Platnosc:", value=wybrana_platnosc, inline=True)
-        embed.add_field(name="🎟️ Kod rabatowy:", value=rabat_info, inline=False)
+        embed.add_field(name="💳 Platnosc:", value=self.platnosc_text.value, inline=True)
         if self.uwagi.value:
             embed.add_field(name="📝 Dodatkowe uwagi:", value=self.uwagi.value, inline=False)
 
@@ -189,6 +197,7 @@ class MainPanelView(ui.View):
         )
         await interaction.response.send_message(embed=embed, view=WyborOfertyView(), ephemeral=True)
 
+# --- 2. SYSTEM TICKETÓW ---
 class TicketCloseView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -224,6 +233,7 @@ class TicketPanelView(ui.View):
         await ch.send(embed=embed, view=TicketCloseView())
         await interaction.followup.send(f"✅ Utworzono ticket: {ch.mention}", ephemeral=True)
 
+# --- 3. WERYFIKACJA CAPTCHA ---
 class CaptchaModal(ui.Modal):
     def __init__(self, rola_id: int, correct_answer: int, equation_str: str):
         super().__init__(title="WERYFIKACJA BEZPIECZENSTWA")
@@ -256,11 +266,12 @@ class WeryfikacjaView(ui.View):
         n1, n2 = random.randint(1, 10), random.randint(1, 10)
         await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
 
+# --- 4. SYSTEM OPINIE ---
 class OpinieModal(ui.Modal):
     def __init__(self):
         super().__init__(title="WYSTAW OPINIE")
 
-    wykonawca = ui.TextInput(label="WYKONAWCA USLUGI:", placeholder="Np. HakerRoblox (haker.roblox)", required=True, max_length=100)
+    wykonawca = ui.TextInput(label="WYKONAWCA USLUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
     tresc = ui.TextInput(label="TRESC OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
     jakosc = ui.TextInput(label="JAKOSC I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
     czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
@@ -304,6 +315,7 @@ class OpiniePanelView(ui.View):
     async def open_opinie_modal(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.response.send_modal(OpinieModal())
 
+# --- 5. KOMENDY SLASH ---
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
     await interaction.response.send_modal(OpinieModal())
@@ -325,6 +337,48 @@ async def cmd_opinie_setup(interaction: discord.Interaction):
     
     await interaction.channel.send(embed=embed, view=OpiniePanelView())
     await interaction.followup.send("✅ Wysłano panel opinii.", ephemeral=True)
+
+@bot.tree.command(name="regulamin", description="[Właściciel] Wysyła oficjalny regulamin serwera Hakerolandia")
+@is_owner()
+async def cmd_regulamin(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    
+    regulamin_tekst = (
+        "📜 **REGULAMIN SERWERA**\n\n"
+        "🤝 **1. Szanuj innych**\n"
+        "Nie wyzywaj, nie obrażaj i nie prowokuj. Zakaz mowy nienawiści, rasizmu i dyskryminacji.\n\n"
+        "🛡️ **2. Szanuj administrację**\n"
+        "Wykonuj polecenia administracji. Jeśli nie zgadzasz się z decyzją, zgłoś problem przez ticket.\n\n"
+        "💬 **3. Nie spamuj**\n"
+        "Zakaz spamu, floodu, bezsensownego pingowania oraz pisania nie na temat. Za spam grozi 1 godzina przerwy (mute).\n\n"
+        "📢 **4. Zakaz reklam i własnych serwerów**\n"
+        "Nie reklamuj innych serwerów, kanałów, stron ani usług bez zgody administracji. Reklamowanie własnego serwera Discord jest zabronione — wysyłanie zaproszeń do własnych serwerów = ban. Zakaz podejrzanych linków, cheatów i exploitów.\n\n"
+        "🔞 **5. Zakaz treści 18+**\n"
+        "Nie wysyłaj treści NSFW, seksualnych, brutalnych ani innych nieodpowiednich materiałów.\n\n"
+        "🔐 **6. Chroń prywatność**\n"
+        "Nie udostępniaj danych swoich ani innych osób. Zakaz publikowania prywatnych zdjęć i podszywania się pod innych.\n\n"
+        "🎮 **7. Graj uczciwie**\n"
+        "Zakaz cheatów, exploitów i wykorzystywania błędów w celu uzyskania przewagi.\n\n"
+        "🧵 **8. Zakaz tworzenia wątków**\n"
+        "Tworzenie wątków na serwerze jest zabronione. Za utworzenie wątku grozi kick.\n\n"
+        "🎫 **9. Zgłoszenia**\n"
+        "Problemy i skargi zgłaszaj przez ticket. Nie oznaczaj administracji bez ważnego powodu.\n\n"
+        "⚠️ **10. Kary**\n"
+        "Ostrzeżenie → Mute → Kick → Ban. Za poważne przewinienia kara może zostać nadana od razu. Omijanie bana = ban permanentny.\n\n"
+        "✅ **11. Akceptacja**\n"
+        "Dołączając na serwer, akceptujesz regulamin i zobowiązujesz się go przestrzegać.\n\n"
+        "⭐ **Baw się dobrze i szanuj wszystkich!**\n\n"
+        "📄 **Discord:**\n"
+        "Warunki: https://discord.com/terms\n"
+        "Prywatność: https://discord.com/privacy\n"
+        "Wytyczne: https://discord.com/guidelines"
+    )
+
+    embed = discord.Embed(description=regulamin_tekst, color=discord.Color.from_rgb(30, 144, 255))
+    embed.set_author(name=f"{interaction.guild.name} × ZASADY", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
+    
+    await interaction.channel.send(embed=embed)
+    await interaction.followup.send("✅ Wysłano regulamin serwera.", ephemeral=True)
 
 @bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu z pełnym opisem i opcjonalnym obrazkiem")
 @app_commands.describe(obrazek_url="Bezpośredni link URL do obrazka/bannera (opcjonalnie)")
