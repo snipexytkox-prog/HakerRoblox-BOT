@@ -268,7 +268,8 @@ class OpinieModal(ui.Modal):
     def __init__(self):
         super().__init__(title="WYSTAW OPINIĘ")
 
-    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
+    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. V
+    HakerRoblox (haker.roblox)", required=True, max_length=100)
     tresc = ui.TextInput(label="TREŚĆ OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
     jakosc = ui.TextInput(label="JAKOŚĆ I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
     czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
