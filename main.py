@@ -130,13 +130,13 @@ async def on_member_join(member: discord.Member):
 # --- 1. SYSTEM SKLEPU I MODAL ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
-        super().__init__(title="Potrzebne informacje.")
+        super().__init__(title="POTRZEBNE INFORMACJE.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
-    nick_dc = ui.TextInput(label="JAKI JEST TWÓJ NICK NA DISCORDZIE:", placeholder="Podaj swój nick z discorda.", required=True, max_length=50)
-    platnosc_text = ui.TextInput(label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT):", placeholder="Wpisz wybraną metodę płatności", required=True, max_length=30)
-    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIŻKOWY:", placeholder="Przykład: HakerRoblox15", required=False, max_length=20)
+    nick_dc = ui.TextInput(label="JAKI JEST TWÓJ NICK NA DISCORDZIE:", placeholder="Podaj swój nick z @.", required=True, max_length=50)
+    platnosc_text = ui.TextInput(label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT / PSC):", placeholder="Wpisz wybraną metodę płatności", required=True, max_length=30)
+    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIŻKOWY:", placeholder="Przykład: HAKERROBLOX", required=False, max_length=20)
     uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMÓWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -205,6 +205,10 @@ class TicketCloseView(ui.View):
 
     @ui.button(label="Zamknij ticket", style=discord.ButtonStyle.danger, custom_id="zamknij_ticket_btn", emoji="🔒")
     async def close(self, interaction: discord.Interaction, button: ui.Button):
+        if not interaction.user.guild_permissions.manage_channels:
+            await interaction.response.send_message("❌ Nie masz uprawnień do zamykania ticketów", ephemeral=True)
+            return
+
         await interaction.response.defer(ephemeral=True)
         await interaction.channel.delete()
 
