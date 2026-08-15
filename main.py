@@ -15,8 +15,6 @@ OWNER_ID_STR = os.getenv("OWNER_ID")
 OWNER_ID = int(OWNER_ID_STR) if OWNER_ID_STR else 0
 
 user_balances = {}
-
-# Słownik przechowujący konfigurację powiadomień YT: {guild_id: {"channel_id": id, "yt_id": "ID", "yt_kanal": "...", "yt_link": "...", "yt_wiadomosc": "...", "last_video": "..."}}
 yt_subscriptions = {}
 
 def is_owner():
@@ -38,8 +36,8 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(MainPanelView())
         self.add_view(WyborOfertyView())
         self.add_view(TicketCloseView())
+        self.add_view(OpiniePanelView())  # Rejestracja stałego widoku panelu opinii
         
-        # Uruchomienie pętli sprawdzającej YouTube w tle (co 1 minutę)
         check_youtube_videos.start()
 
         if GUILD_ID:
@@ -56,7 +54,7 @@ bot = ZaawansowanyBot()
 async def on_ready():
     print(f"🤖 Zalogowano jako: {bot.user}")
 
-# --- PĘTLA SPRAWDZAJĄCA NOWE FILMY NA YT (W STYLU KOYA) ---
+# --- PĘTLA SPRAWDZAJĄCA NOWE FILMY NA YT ---
 @tasks.loop(minutes=1)
 async def check_youtube_videos():
     for guild_id, data in yt_subscriptions.items():
@@ -67,7 +65,6 @@ async def check_youtube_videos():
         yt_wiadomosc = data["yt_wiadomosc"]
         last_video = data["last_video"]
 
-        # RSS feed YouTube dla danego kanału
         rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={yt_id}"
         feed = feedparser.parse(rss_url)
 
@@ -77,7 +74,6 @@ async def check_youtube_videos():
             video_title = latest.title
             video_link = latest.link
 
-            # Jeśli to nowy film, którego jeszcze nie wysłano
             if video_id != last_video:
                 yt_subscriptions[guild_id]["last_video"] = video_id
                 
@@ -267,12 +263,12 @@ class WeryfikacjaView(ui.View):
         n1, n2 = random.randint(1, 10), random.randint(1, 10)
         await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
 
-# --- 4. SYSTEM OPINII (MODAL) ---
+# --- 4. SYSTEM OPINIE (MODAL I PANEL) ---
 class OpinieModal(ui.Modal):
     def __init__(self):
         super().__init__(title="WYSTAW OPINIĘ")
 
-    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. Rexo & ziomex", required=True, max_length=100)
+    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
     tresc = ui.TextInput(label="TREŚĆ OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
     jakosc = ui.TextInput(label="JAKOŚĆ I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
     czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
@@ -280,7 +276,6 @@ class OpinieModal(ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        # Walidacja cyfr dla ocen
         try:
             val_jakosc = int(self.jakosc.value.strip())
             val_czas = int(self.czas.value.strip())
@@ -290,7 +285,6 @@ class OpinieModal(ui.Modal):
             await interaction.followup.send("❌ Oceny jakości i czasu muszą być cyframi od 1 do 5!", ephemeral=True)
             return
 
-        # Generowanie gwiazdek
         gwiazdki_jakosc = "⭐" * val_jakosc
         gwiazdki_czas = "⭐" * val_czas
 
@@ -298,23 +292,48 @@ class OpinieModal(ui.Modal):
         embed.set_author(name=f"{interaction.guild.name} × OPINIA", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
         
         opis_opinii = (
-            f"• **Twórca opinii:** {interaction.user.mention}\n"
-            f"• **Wykonawca usługi:** {self.wykonawca.value}\n"
-            f"• **Treść opinii:** {self.tresc.value}\n\n"
-            f"• **Jakość i Wykonanie Usługi:** {gwiazdki_jakosc} ({val_jakosc}/5)\n"
-            f"• **Czas Realizacji Zamówienia:** {gwiazdki_czas} ({val_czas}/5)"
+            f"» **Twórca opinii:** {interaction.user.mention}\n"
+            f"» **Wykonawca usługi:** {self.wykonawca.value}\n"
+            f"» **Treść opinii:** {self.tresc.value}\n\n"
+            f"» **Jakość i Wykonanie Usługi:** {gwiazdki_jakosc} ({val_jakosc}/5)\n"
+            f"» **Czas Realizacji Zamówienia:** {gwiazdki_czas} ({val_czas}/5)"
         )
         embed.description = opis_opinii
         embed.set_footer(text="Hakerolandia • System Opinii")
 
-        # Wysyłamy embed na kanał, na którym użyto komendy /opinie
         await interaction.channel.send(embed=embed)
         await interaction.followup.send("✅ Twoja opinia została pomyślnie wysłana!", ephemeral=True)
 
+class OpiniePanelView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="Wystaw Opinię", style=discord.ButtonStyle.success, custom_id="przycisk_wystaw_opinie", emoji="⭐")
+    async def open_opinie_modal(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.send_modal(OpinieModal())
+
 # --- 5. KOMENDY SLASH ---
-@bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze")
+@bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
     await interaction.response.send_modal(OpinieModal())
+
+@bot.tree.command(name="opinie-setup", description="[Właściciel] Wysyła panel z przyciskiem do wystawiania opinii")
+@is_owner()
+async def cmd_opinie_setup(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    
+    opis = (
+        "» **Wystawiając opinię** pokazujesz innym, jak przebiegła Twoja obsługa.\n"
+        "» **Gorąco prosimy** o jej wystawienie, buduje to nasze zaufanie.\n\n"
+        "» Zrobisz to klikając **poniższy przycisk**."
+    )
+    
+    embed = discord.Embed(color=discord.Color.from_rgb(30, 144, 255))
+    embed.set_author(name=f"{interaction.guild.name} × WYSTAW NAM OPINIĘ", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
+    embed.description = opis
+    
+    await interaction.channel.send(embed=embed, view=OpiniePanelView())
+    await interaction.followup.send("✅ Wysłano panel opinii.", ephemeral=True)
 
 @bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu z pełnym opisem i opcjonalnym obrazkiem")
 @app_commands.describe(obrazek_url="Bezpośredni link URL do obrazka/bannera (opcjonalnie)")
