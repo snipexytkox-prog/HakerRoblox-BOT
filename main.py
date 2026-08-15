@@ -16,7 +16,7 @@ OWNER_ID = int(OWNER_ID_STR) if OWNER_ID_STR else 0
 
 user_balances = {}
 
-# Słownik przechowujący konfigurację powiadomień YT: {guild_id: {"channel_id": id, "yt_id": "ID", "yt_kanal": "...", "yt_link": "...", "yt_rola": role_obj, "last_video": "..."}}
+# Słownik przechowujący konfigurację powiadomień YT: {guild_id: {"channel_id": id, "yt_id": "ID", "yt_kanal": "...", "yt_link": "...", "yt_wiadomosc": "...", "last_video": "..."}}
 yt_subscriptions = {}
 
 def is_owner():
@@ -64,7 +64,7 @@ async def check_youtube_videos():
         yt_id = data["yt_id"]
         yt_kanal = data["yt_kanal"]
         yt_link = data["yt_link"]
-        yt_rola = data["yt_rola"]
+        yt_wiadomosc = data["yt_wiadomosc"]
         last_video = data["last_video"]
 
         # RSS feed YouTube dla danego kanału
@@ -102,8 +102,8 @@ async def check_youtube_videos():
                     view = ui.View()
                     view.add_item(ui.Button(label="Oglądaj na YouTube", url=video_link, style=discord.ButtonStyle.link, emoji="▶️"))
 
-                    ping_tekst = yt_rola.mention if yt_rola else ""
-                    await channel.send(content=f"🔔 {ping_tekst} **Nowy film pojawił się na kanale!** Sprawdź go koniecznie:", embed=embed, view=view)
+                    tekst_wysylki = yt_wiadomosc if yt_wiadomosc else "🔔 **Nowy film pojawił się na kanale!** Sprawdź go koniecznie:"
+                    await channel.send(content=tekst_wysylki, embed=embed, view=view)
 
 @check_youtube_videos.before_loop
 async def before_check_youtube():
@@ -130,13 +130,13 @@ async def on_member_join(member: discord.Member):
 # --- 1. SYSTEM SKLEPU I MODAL ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
-        super().__init__(title="Potrzebne Informacje.")
+        super().__init__(title="POTRZEBNE INFORMACJE.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
     nick_dc = ui.TextInput(label="JAKI JEST TWÓJ NICK NA DISCORDZIE:", placeholder="Podaj swój nick z @.", required=True, max_length=50)
-    platnosc_text = ui.TextInput(label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT):", placeholder="Wpisz wybraną metodę płatności", required=True, max_length=30)
-    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIŻKOWY:", placeholder="Przykład: HakerRoblox15", required=False, max_length=20)
+    platnosc_text = ui.TextInput(label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT / PSC):", placeholder="Wpisz wybraną metodę płatności", required=True, max_length=30)
+    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIŻKOWY:", placeholder="Przykład: HAKERROBLOX", required=False, max_length=20)
     uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMÓWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -339,12 +339,18 @@ async def cmd_weryfikacja_setup(interaction: discord.Interaction, rola_id: str):
 @bot.tree.command(name="yt-setup", description="[Właściciel] Ustawia powiadomienia z YouTube")
 @app_commands.describe(
     kanal_id_yt="ID kanału YouTube (np. UCxxxx)",
-    yt_kanal="Nazwa Twojego kanału YouTube",
-    yt_link="Link do Twojego kanału YouTube",
-    yt_rola="Rola, która ma być pingowana (opcjonalnie)"
+    yt_kanal="Wymagana nazwa Twojego kanału YouTube",
+    yt_link="Wymagany link do Twojego kanału YouTube",
+    yt_wiadomosc="Opcjonalna wiadomość/ping nad embedem (np. @everyone Nowy film!)"
 )
 @is_owner()
-async def cmd_yt_setup(interaction: discord.Interaction, kanal_id_yt: str, yt_kanal: str, yt_link: str, yt_rola: discord.Role = None):
+async def cmd_yt_setup(
+    interaction: discord.Interaction, 
+    kanal_id_yt: str, 
+    yt_kanal: str, 
+    yt_link: str, 
+    yt_wiadomosc: str = None
+):
     await interaction.response.defer(ephemeral=True)
     
     rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={kanal_id_yt}"
@@ -359,13 +365,12 @@ async def cmd_yt_setup(interaction: discord.Interaction, kanal_id_yt: str, yt_ka
         "yt_id": kanal_id_yt,
         "yt_kanal": yt_kanal,
         "yt_link": yt_link,
-        "yt_rola": yt_rola,
+        "yt_wiadomosc": yt_wiadomosc,
         "last_video": last_vid
     }
 
-    rola_info = f"z pingiem roli {yt_rola.mention}" if yt_rola else "bez pingowania roli"
     await interaction.followup.send(
-        f"✅ Skonfigurowano powiadomienia dla kanału **{yt_kanal}** ({rola_info})!",
+        f"✅ Skonfigurowano powiadomienia dla kanału **{yt_kanal}**!",
         ephemeral=True
     )
 
