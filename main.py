@@ -1,9 +1,10 @@
 import discord
 from discord import ui, app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 import os
 import random
 from datetime import timedelta
+import feedparser
 
 # --- KONFIGURACJA ---
 TOKEN = os.getenv("TOKEN")
@@ -14,7 +15,9 @@ OWNER_ID_STR = os.getenv("OWNER_ID")
 OWNER_ID = int(OWNER_ID_STR) if OWNER_ID_STR else 0
 
 user_balances = {}
-user_warnings = {}
+
+# Słownik przechowujący konfigurację powiadomień YT: {guild_id: {"channel_id": id, "yt_id": "ID", "yt_kanal": "...", "yt_link": "...", "yt_rola": role_obj, "last_video": "..."}}
+yt_subscriptions = {}
 
 def is_owner():
     async def predicate(interaction: discord.Interaction):
@@ -36,6 +39,9 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(WyborOfertyView())
         self.add_view(TicketCloseView())
         
+        # Uruchomienie pętli sprawdzającej YouTube w tle (co 1 minutę)
+        check_youtube_videos.start()
+
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
             self.tree.copy_global_to(guild=guild)
@@ -49,6 +55,59 @@ bot = ZaawansowanyBot()
 @bot.event
 async def on_ready():
     print(f"🤖 Zalogowano jako: {bot.user}")
+
+# --- PĘTLA SPRAWDZAJĄCA NOWE FILMY NA YT (W STYLU KOYA) ---
+@tasks.loop(minutes=1)
+async def check_youtube_videos():
+    for guild_id, data in yt_subscriptions.items():
+        channel_id = data["channel_id"]
+        yt_id = data["yt_id"]
+        yt_kanal = data["yt_kanal"]
+        yt_link = data["yt_link"]
+        yt_rola = data["yt_rola"]
+        last_video = data["last_video"]
+
+        # RSS feed YouTube dla danego kanału
+        rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={yt_id}"
+        feed = feedparser.parse(rss_url)
+
+        if feed.entries:
+            latest = feed.entries[0]
+            video_id = latest.id.split(":")[-1]
+            video_title = latest.title
+            video_link = latest.link
+
+            # Jeśli to nowy film, którego jeszcze nie wysłano
+            if video_id != last_video:
+                yt_subscriptions[guild_id]["last_video"] = video_id
+                
+                channel = bot.get_channel(channel_id)
+                if channel:
+                    embed = discord.Embed(
+                        title=video_title,
+                        url=video_link,
+                        color=discord.Color.from_rgb(255, 0, 0),
+                    )
+
+                    thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+                    embed.set_image(url=thumbnail_url)
+
+                    embed.set_author(
+                        name=yt_kanal,
+                        icon_url="https://www.iconpacks.net/icons/2/free-youtube-logo-icon-2431-thumb.png",
+                        url=yt_link
+                    )
+                    embed.set_footer(text="YouTube • Powiadomienie o nowym filmie", icon_url="https://cdn-icons-png.flaticon.com/512/1384/1384060.png")
+
+                    view = ui.View()
+                    view.add_item(ui.Button(label="Oglądaj na YouTube", url=video_link, style=discord.ButtonStyle.link, emoji="▶️"))
+
+                    ping_tekst = yt_rola.mention if yt_rola else ""
+                    await channel.send(content=f"🔔 {ping_tekst} **Nowy film pojawił się na kanale!** Sprawdź go koniecznie:", embed=embed, view=view)
+
+@check_youtube_videos.before_loop
+async def before_check_youtube():
+    await bot.wait_until_ready()
 
 # --- POWITANIE NA PRIV (DM) PO DOŁĄCZENIU ---
 @bot.event
@@ -75,38 +134,13 @@ class ZamowienieModal(ui.Modal):
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
-    nick_dc = ui.TextInput(
-        label="JAKI JEST TWÓJ NICK NA DISCORDZIE:",
-        placeholder="Podaj swój nick z discorda",
-        required=True,
-        max_length=50,
-    )
-
-    platnosc_text = ui.TextInput(
-        label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT):",
-        placeholder="Wpisz wybraną metodę płatności",
-        required=True,
-        max_length=30,
-    )
-
-    kod_znizkowy = ui.TextInput(
-        label="CZY POSIADASZ KOD ZNIŻKOWY:",
-        placeholder="Przykład: HakerRoblox15",
-        required=False,
-        max_length=20,
-    )
-
-    uwagi = ui.TextInput(
-        label="DODATKOWE UWAGI DO ZAMÓWIENIA:",
-        placeholder="Opisz swoje wymagania",
-        style=discord.TextStyle.paragraph,
-        required=False,
-        max_length=200,
-    )
+    nick_dc = ui.TextInput(label="JAKI JEST TWÓJ NICK NA DISCORDZIE:", placeholder="Podaj swój nick z @.", required=True, max_length=50)
+    platnosc_text = ui.TextInput(label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT):", placeholder="Wpisz wybraną metodę płatności", required=True, max_length=30)
+    kod_znizkowy = ui.TextInput(label="CZY POSIADASZ KOD ZNIŻKOWY:", placeholder="Przykład: HakerRoblox15", required=False, max_length=20)
+    uwagi = ui.TextInput(label="DODATKOWE UWAGI DO ZAMÓWIENIA:", placeholder="Opisz swoje wymagania", style=discord.TextStyle.paragraph, required=False, max_length=200)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-
         wybrana_platnosc = self.platnosc_text.value.strip()
         cena_ostateczna = self.cena_wyjsciowa
         rabat_info = "Brak"
@@ -115,11 +149,7 @@ class ZamowienieModal(ui.Modal):
             cena_ostateczna = self.cena_wyjsciowa * 0.95
             rabat_info = "HakerRoblox (-5% zniżki)"
 
-        embed = discord.Embed(
-            title="🟢 POTWIERDZENIE ZAMÓWIENIA",
-            description="Twoje zgłoszenie zamówienia zostało zapisane.",
-            color=discord.Color.green(),
-        )
+        embed = discord.Embed(title="🟢 POTWIERDZENIE ZAMÓWIENIA", description="Twoje zgłoszenie zamówienia zostało zapisane.", color=discord.Color.green())
         embed.add_field(name="📦 Wybrana usługa:", value=f"• **1x {self.pakiet_nazwa}**", inline=False)
         embed.add_field(name="💰 Cena:", value=f"**{cena_ostateczna:.2f} zł**", inline=False)
         embed.add_field(name="👤 Nick Discord:", value=self.nick_dc.value, inline=True)
@@ -305,6 +335,39 @@ async def cmd_weryfikacja_setup(interaction: discord.Interaction, rola_id: str):
     embed = discord.Embed(title="🛡️ WERYFIKACJA", description="Kliknij, aby się zweryfikować.", color=discord.Color.dark_gray())
     await interaction.channel.send(embed=embed, view=view)
     await interaction.followup.send("✅ Wysłano panel weryfikacji.", ephemeral=True)
+
+@bot.tree.command(name="yt-setup", description="[Właściciel] Ustawia powiadomienia z YouTube")
+@app_commands.describe(
+    kanal_id_yt="ID kanału YouTube (np. UCxxxx)",
+    yt_kanal="Nazwa Twojego kanału YouTube",
+    yt_link="Link do Twojego kanału YouTube",
+    yt_rola="Rola, która ma być pingowana (opcjonalnie)"
+)
+@is_owner()
+async def cmd_yt_setup(interaction: discord.Interaction, kanal_id_yt: str, yt_kanal: str, yt_link: str, yt_rola: discord.Role = None):
+    await interaction.response.defer(ephemeral=True)
+    
+    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={kanal_id_yt}"
+    feed = feedparser.parse(rss_url)
+    
+    last_vid = ""
+    if feed.entries:
+        last_vid = feed.entries[0].id.split(":")[-1]
+
+    yt_subscriptions[interaction.guild.id] = {
+        "channel_id": interaction.channel.id,
+        "yt_id": kanal_id_yt,
+        "yt_kanal": yt_kanal,
+        "yt_link": yt_link,
+        "yt_rola": yt_rola,
+        "last_video": last_vid
+    }
+
+    rola_info = f"z pingiem roli {yt_rola.mention}" if yt_rola else "bez pingowania roli"
+    await interaction.followup.send(
+        f"✅ Skonfigurowano powiadomienia dla kanału **{yt_kanal}** ({rola_info})!",
+        ephemeral=True
+    )
 
 @bot.tree.command(name="ping", description="[Info] Sprawdza ping bota")
 async def cmd_ping(interaction: discord.Interaction):
