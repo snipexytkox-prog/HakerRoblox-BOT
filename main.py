@@ -71,13 +71,13 @@ async def on_member_join(member: discord.Member):
 # --- 1. SYSTEM SKLEPU I MODAL ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
-        super().__init__(title="POTRZEBNE INFORMACJE.")
+        super().__init__(title="Potrzebne Informacje.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
     nick_dc = ui.TextInput(
         label="JAKI JEST TWÓJ NICK NA DISCORDZIE:",
-        placeholder="Podaj swój nick z @.",
+        placeholder="Podaj swój nick z discorda",
         required=True,
         max_length=50,
     )
