@@ -83,7 +83,7 @@ async def on_ready():
     print(f"🤖 Zalogowano pomyślnie jako: {bot.user}")
 
 
-# --- 1. SYSTEM SKLEPU I ZAMÓWIEŃ ---
+# --- 1. SYSTEM SKLEPU I ZAMÓWIEŃ (BLIK / REVOLUT) ---
 class PlatnoscSelect(ui.Select):
 
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float, nick_dc: str, uwagi: str, kod_znizkowy: str):
@@ -186,7 +186,7 @@ class ZamowienieModal(ui.Modal, title="POTRZEBNE INFORMACJE."):
         self.cena_wyjsciowa = cena_wyjsciowa
 
     nick_dc = ui.TextInput(
-        label="JAKI JEST TWÓJ NICK NA DISCORDZIE:",
+        label="JAKI JEST TWÓJ NICK NA DISCORDDZIE:",
         placeholder="Podaj swój nick z @.",
         required=True,
         max_length=50,
@@ -206,7 +206,6 @@ class ZamowienieModal(ui.Modal, title="POTRZEBNE INFORMACJE."):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Wyświetlamy menu wyboru płatności (BLIK / REVOLUT) jako kolejna interakcja
         view = PlatnoscView(
             self.pakiet_nazwa,
             self.cena_wyjsciowa,
@@ -216,7 +215,7 @@ class ZamowienieModal(ui.Modal, title="POTRZEBNE INFORMACJE."):
         )
         embed = discord.Embed(
             title="💳 WYBÓR METODY PŁATNOŚCI",
-            description="Wybierz metodę płatności z menu rozwijanego poniżej:",
+            description="Wybierz metodę płatności (BLIK / REVOLUT) z menu rozwijanego poniżej:",
             color=discord.Color.blurple()
         )
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -300,7 +299,7 @@ class MainPanelView(ui.View):
         )
 
 
-# --- 2. SYSTEM TICKETÓW (Z OBSŁUGĄ ROLI) ---
+# --- 2. SYSTEM TICKETÓW (Z OBSŁUGĄ ROLI_ID) ---
 class TicketCloseView(ui.View):
 
     def __init__(self):
@@ -457,7 +456,7 @@ async def on_message(message):
 
 
 # =========================================================================
-# --- 5. KOMENDY ---
+# --- 5. WSZYSTKE KOMENDY ---
 # =========================================================================
 
 @bot.tree.command(
@@ -626,6 +625,7 @@ async def cmd_regulamin(interaction: discord.Interaction):
         color=discord.Color.gold(),
     )
     embed.add_field(name="🤝 1. Szanuj innych", value="Nie wyzywaj, nie obrażaj i nie prowokuj.", inline=False)
+    embed.add_field(name="🛡️ 2. Szanuj administrację", value="Wykonuj polecenia administracji.", inline=False)
     await interaction.response.send_message(embed=embed)
 
 
