@@ -50,22 +50,40 @@ bot = ZaawansowanyBot()
 async def on_ready():
     print(f"🤖 Zalogowano jako: {bot.user}")
 
-# --- 1. SYSTEM SKLEPU I MODAL (NAPRAWIONY) ---
+# --- POWITANIE NA PRIV (DM) PO DOŁĄCZENIU ---
+@bot.event
+async def on_member_join(member: discord.Member):
+    try:
+        embed = discord.Embed(
+            title="HAKEROLANDIA — WITAMY",
+            description=(
+                f"Hej **{member.mention},** miło Cię widzieć na serwerze **Hakerolandia.**\n\n"
+                "🛡️ **Musisz się zweryfikować.** — Przejdź na odpowiedni kanał weryfikacyjny i kliknij w przycisk.\n"
+                "🛒 **Chcesz coś zamówić?** — Po zweryfikowaniu się przejdź na kanał sklepu.\n\n"
+                "Dołącz do **najlepszej ekipy i korzystaj z promocji,** zanim ktoś inny zgarnie je pierwszy!"
+            ),
+            color=discord.Color.blurple()
+        )
+        await member.send(embed=embed)
+    except discord.Forbidden:
+        pass
+
+# --- 1. SYSTEM SKLEPU I MODAL ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
-        super().__init__(title="Potrzebne Informacje.")
+        super().__init__(title="POTRZEBNE INFORMACJE.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
     nick_dc = ui.TextInput(
         label="JAKI JEST TWÓJ NICK NA DISCORDZIE:",
-        placeholder="Podaj swój nick z discorda.",
+        placeholder="Podaj swój nick z @.",
         required=True,
         max_length=50,
     )
 
     platnosc_text = ui.TextInput(
-        label="WPISZ PŁATNOŚĆ (BLIK / REVOLUT):",
+        label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT / PSC):",
         placeholder="Wpisz wybraną metodę płatności",
         required=True,
         max_length=30,
@@ -73,7 +91,7 @@ class ZamowienieModal(ui.Modal):
 
     kod_znizkowy = ui.TextInput(
         label="CZY POSIADASZ KOD ZNIŻKOWY:",
-        placeholder="Przykład: HakerRoblox15",
+        placeholder="Przykład: HAKERROBLOX",
         required=False,
         max_length=20,
     )
