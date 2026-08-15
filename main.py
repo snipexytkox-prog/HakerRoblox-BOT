@@ -267,7 +267,55 @@ class WeryfikacjaView(ui.View):
         n1, n2 = random.randint(1, 10), random.randint(1, 10)
         await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
 
-# --- 4. KOMENDY SLASH ---
+# --- 4. SYSTEM OPINII (MODAL) ---
+class OpinieModal(ui.Modal):
+    def __init__(self):
+        super().__init__(title="WYSTAW OPINIĘ")
+
+    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. Rexo & ziomex", required=True, max_length=100)
+    tresc = ui.TextInput(label="TREŚĆ OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
+    jakosc = ui.TextInput(label="JAKOŚĆ I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
+    czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        # Walidacja cyfr dla ocen
+        try:
+            val_jakosc = int(self.jakosc.value.strip())
+            val_czas = int(self.czas.value.strip())
+            if not (1 <= val_jakosc <= 5) or not (1 <= val_czas <= 5):
+                raise ValueError()
+        except ValueError:
+            await interaction.followup.send("❌ Oceny jakości i czasu muszą być cyframi od 1 do 5!", ephemeral=True)
+            return
+
+        # Generowanie gwiazdek
+        gwiazdki_jakosc = "⭐" * val_jakosc
+        gwiazdki_czas = "⭐" * val_czas
+
+        embed = discord.Embed(color=discord.Color.from_rgb(30, 144, 255))
+        embed.set_author(name=f"{interaction.guild.name} × OPINIA", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
+        
+        opis_opinii = (
+            f"• **Twórca opinii:** {interaction.user.mention}\n"
+            f"• **Wykonawca usługi:** {self.wykonawca.value}\n"
+            f"• **Treść opinii:** {self.tresc.value}\n\n"
+            f"• **Jakość i Wykonanie Usługi:** {gwiazdki_jakosc} ({val_jakosc}/5)\n"
+            f"• **Czas Realizacji Zamówienia:** {gwiazdki_czas} ({val_czas}/5)"
+        )
+        embed.description = opis_opinii
+        embed.set_footer(text="Hakerolandia • System Opinii")
+
+        # Wysyłamy embed na kanał, na którym użyto komendy /opinie
+        await interaction.channel.send(embed=embed)
+        await interaction.followup.send("✅ Twoja opinia została pomyślnie wysłana!", ephemeral=True)
+
+# --- 5. KOMENDY SLASH ---
+@bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze")
+async def cmd_opinie(interaction: discord.Interaction):
+    await interaction.response.send_modal(OpinieModal())
+
 @bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu z pełnym opisem i opcjonalnym obrazkiem")
 @app_commands.describe(obrazek_url="Bezpośredni link URL do obrazka/bannera (opcjonalnie)")
 @is_owner()
