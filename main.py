@@ -71,19 +71,19 @@ async def on_member_join(member: discord.Member):
 # --- 1. SYSTEM SKLEPU I MODAL ---
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
-        super().__init__(title="Potrzebne Informacje.")
+        super().__init__(title="POTRZEBNE INFORMACJE.")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_wyjsciowa = cena_wyjsciowa
 
     nick_dc = ui.TextInput(
         label="JAKI JEST TWÓJ NICK NA DISCORDZIE:",
-        placeholder="Podaj swój nick z discorda",
+        placeholder="Podaj swój nick z @.",
         required=True,
         max_length=50,
     )
 
     platnosc_text = ui.TextInput(
-        label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT):",
+        label="WYBIERZ PŁATNOŚĆ (BLIK / REVOLUT / PSC):",
         placeholder="Wpisz wybraną metodę płatności",
         required=True,
         max_length=30,
@@ -91,7 +91,7 @@ class ZamowienieModal(ui.Modal):
 
     kod_znizkowy = ui.TextInput(
         label="CZY POSIADASZ KOD ZNIŻKOWY:",
-        placeholder="Przykład: HakerRoblox15",
+        placeholder="Przykład: HAKERROBLOX",
         required=False,
         max_length=20,
     )
@@ -234,11 +234,19 @@ class WeryfikacjaView(ui.View):
         await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
 
 # --- 4. KOMENDY SLASH ---
-@bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu")
+@bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu z opcjonalnym obrazkiem")
+@app_commands.describe(obrazek_url="Bezpośredni link URL do obrazka/bannera (opcjonalnie)")
 @is_owner()
-async def cmd_wyslij_panel(interaction: discord.Interaction):
+async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = None):
     await interaction.response.defer(ephemeral=True)
-    embed = discord.Embed(title="🖥️ ZAMÓW SWÓJ SERWER", description="Kliknij poniższy przycisk, aby wybrać pakiet.", color=discord.Color.blurple())
+    embed = discord.Embed(
+        title="🖥️ ZAMÓW SWÓJ SERWER", 
+        description="Kliknij poniższy przycisk, aby wybrać pakiet.", 
+        color=discord.Color.blurple()
+    )
+    if obrazek_url:
+        embed.set_image(url=obrazek_url)
+
     await interaction.channel.send(embed=embed, view=MainPanelView())
     await interaction.followup.send("✅ Wysłano panel sklepu.", ephemeral=True)
 
