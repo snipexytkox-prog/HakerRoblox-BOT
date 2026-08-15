@@ -234,16 +234,50 @@ class WeryfikacjaView(ui.View):
         await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
 
 # --- 4. KOMENDY SLASH ---
-@bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu z opcjonalnym obrazkiem")
+@bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu z pełnym opisem i opcjonalnym obrazkiem")
 @app_commands.describe(obrazek_url="Bezpośredni link URL do obrazka/bannera (opcjonalnie)")
 @is_owner()
 async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = None):
     await interaction.response.defer(ephemeral=True)
-    embed = discord.Embed(
-        title="🖥️ ZAMÓW SWÓJ SERWER", 
-        description="Kliknij poniższy przycisk, aby wybrać pakiet.", 
-        color=discord.Color.blurple()
+    
+    opis = (
+        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
+        "**HAKEROLANDIA**\n\n"
+        "⚠️ **UWAGA!**\n"
+        "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
+        "🟢 **START — 19,99 zł**\n"
+        "• Max 10 kategorii / 30 kanałów\n"
+        "• Podstawowe rangi\n"
+        "• Lobby\n"
+        "• Zabezpieczenia\n"
+        "• Własne preferencje\n\n"
+        "🔵 **BASIC — 39,99 zł**\n"
+        "• Max 20 kategorii / 50 kanałów\n"
+        "• Rangi użytkowników i administracji\n"
+        "• Ekonomia + sklep\n"
+        "• Selfrole\n"
+        "• Invite Logger\n"
+        "• Lobby + statystyki\n"
+        "• Zabezpieczenia\n\n"
+        "🟣 **PREMIUM — 69,99 zł**\n"
+        "• Nielimitowane kategorie i kanały\n"
+        "• Rozbudowane rangi\n"
+        "• Ekonomia + sklep\n"
+        "• Logi + statystyki\n"
+        "• Zaawansowane zabezpieczenia\n"
+        "• Lobby + regulamin\n"
+        "• Pomoc w rozwoju serwera\n\n"
+        "💳 **PŁATNOŚĆ**\n"
+        "BLIK • REVOLUT\n\n"
+        "⏱️ Realizacja do 48h\n"
+        "⭐ Po odbiorze możesz zostawić opinię!\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "🔥 **HAKEROLANDIA**\n"
+        "Twój pomysł. Nasza realizacja.\n"
+        "━━━━━━━━━━━━━━━━━━"
     )
+
+    embed = discord.Embed(description=opis, color=discord.Color.blurple())
     if obrazek_url:
         embed.set_image(url=obrazek_url)
 
