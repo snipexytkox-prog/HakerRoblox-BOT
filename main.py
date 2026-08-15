@@ -55,6 +55,7 @@ class ZaawansowanyBot(commands.Bot):
         )
 
     async def setup_hook(self):
+        # Rejestrowanie widoków na stałe, aby przyciski i menu nie wygasały po czasie
         self.add_view(MainPanelView())
         self.add_view(WyborOfertyView())
         self.add_view(TicketCloseView())
@@ -213,6 +214,7 @@ class PakietSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         wybor = self.values[0]
+        # Bezpośrednie wywołanie send_modal w wyznaczonym przez Discord czasie (zapobiega błędom timeoutu)
         if wybor == "start":
             await interaction.response.send_modal(
                 ZamowienieModal("Pakiet START", 19.99)
