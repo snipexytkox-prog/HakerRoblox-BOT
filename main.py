@@ -91,7 +91,7 @@ class ZamowienieModal(ui.Modal):
 
     kod_znizkowy = ui.TextInput(
         label="CZY POSIADASZ KOD ZNIŻKOWY:",
-        placeholder="Przykład: HAKERROBLOX",
+        placeholder="Przykład: HakerRoblox15",
         required=False,
         max_length=20,
     )
