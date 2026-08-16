@@ -45,10 +45,12 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(MainPanelView())
         self.add_view(WyborOfertyView())
         self.add_view(TicketCloseView())
+        self.add_view(TicketPanelView())
         self.add_view(OpiniePanelView())
         self.add_view(CennikPanelView())
         self.add_view(KodyPolecajacePanelView())
         self.add_view(PlatnosciPanelView())
+        self.add_view(WeryfikacjaView())
         
         check_youtube_videos.start()
 
@@ -177,20 +179,31 @@ class CennikPanelView(ui.View):
 
 
 # --- 1A. SYSTEM PŁATNOŚCI ---
+class MetodaPlatnosciSelect(ui.Select):
+    def __init__(self):
+        opcje = [
+            discord.SelectOption(label="BLIK", description="Płatność przez BLIK", emoji="🟩", value="blik"),
+            discord.SelectOption(label="Revolut", description="Płatność przez Revolut", emoji="🟦", value="revolut"),
+        ]
+        super().__init__(placeholder="Wybierz metodę płatności (BLIK / Revolut)...", min_values=1, max_values=1, options=opcje)
+
+    async def callback(self, interaction: discord.Interaction):
+        wybor = self.values[0].upper()
+        view = ui.View()
+        view.add_item(ui.Button(label=f"Zapłać ({wybor})", style=discord.ButtonStyle.link, url="https://tipply.pl/@hakerroblox", emoji="💳"))
+        await interaction.response.send_message(f"Wybrano: **{wybor}**. Kliknij przycisk poniżej:", view=view, ephemeral=True)
+
 class PlatnosciPanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-
-    @ui.button(label="Zapłać przez Tipply (BLIK / Revolut)", style=discord.ButtonStyle.link, url="https://tipply.pl/@hakerroblox", emoji="💳")
-    async def btn_tipply(self, interaction: discord.Interaction, button: ui.Button):
-        pass
+        self.add_item(MetodaPlatnosciSelect())
 
     @ui.button(label="Informacje o płatności", style=discord.ButtonStyle.secondary, custom_id="btn_info_platnosci", emoji="ℹ️")
     async def btn_info(self, interaction: discord.Interaction, button: ui.Button):
         tekst = (
             "💳 **JAK DOKONAĆ PŁATNOŚCI?**\n\n"
-            "1. Kliknij przycisk **Zapłać przez Tipply**, aby przejść do bezpiecznej strony płatności.\n"
-            "2. Wybierz metodę płatności: **BLIK** lub **Revolut**.\n"
+            "1. Wybierz metodę (BLIK / Revolut) z menu rozwijanego powyżej.\n"
+            "2. Kliknij przycisk, który pojawi się w odpowiedzi.\n"
             "3. Wprowadź kwotę odpowiadającą Twojemu zamówieniu.\n"
             "4. W treści / wiadomości do wpłaty podaj swój **nick z Discorda**.\n"
             "5. Po opłaceniu zamówienia prześlij potwierdzenie w odpowiednim tickecie."
@@ -248,7 +261,6 @@ class ZamowienieModal(ui.Modal):
         cena_calkowita = self.cena_baza * self.ilosc
         znizka_info = "Brak"
         
-        # Sprawdzanie kodu zniżkowego (5% zniżki)
         wpisany_znizkowy = self.kod_znizkowy.value.strip().upper()
         if wpisany_znizkowy:
             if wpisany_znizkowy in kody_rabatowe:
@@ -259,7 +271,6 @@ class ZamowienieModal(ui.Modal):
             else:
                 znizka_info = f"⚠️ Niepoprawny kod zniżkowy: `{wpisany_znizkowy}`"
 
-        # Sprawdzanie kodu polecającego
         wpisany_polecajacy = self.kod_polecajacy.value.strip().upper()
         if wpisany_polecajacy:
             if wpisany_polecajacy in kody_polecajace:
@@ -303,7 +314,6 @@ class IloscSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         ilosc = int(self.values[0])
-        # Otwieramy bezpośrednio modal formularza po wybraniu sztuk
         await interaction.response.send_modal(ZamowienieModal(self.pakiet_nazwa, self.cena_baza, ilosc))
 
 class IloscSelectView(ui.View):
@@ -500,7 +510,9 @@ class WeryfikacjaView(ui.View):
     @ui.button(label="Zweryfikuj się", style=discord.ButtonStyle.success, custom_id="przycisk_weryfikacji", emoji="🛡️")
     async def verify(self, interaction: discord.Interaction, button: ui.Button):
         n1, n2 = random.randint(1, 10), random.randint(1, 10)
-        await interaction.response.send_modal(CaptchaModal(self.rola_id, n1 + n2, f"{n1} + {n2} = ?"))
+        # Przekazujemy rola_id lub domyślnie 0 jeśli brak w widoku globalnym
+        rid = getattr(self, "rola_id", 0)
+        await interaction.response.send_modal(CaptchaModal(rid, n1 + n2, f"{n1} + {n2} = ?"))
 
 # --- 4. SYSTEM OPINIE ---
 class OpinieModal(ui.Modal):
@@ -687,7 +699,7 @@ async def cmd_platnosci_setup(interaction: discord.Interaction):
         "Za wszystkie zamówienia i usługi możesz wygodnie i bezpiecznie zapłacić za pomocą:\n"
         "🟩 **BLIK**\n"
         "🟦 **Revolut**\n\n"
-        "Kliknij w poniższy przycisk, aby przejść do strony płatności i sfinalizować transakcję. "
+        "Wybierz metodę płatności w menu poniżej, aby wygenerować link do płatności. "
         "Po opłaceniu pamiętaj, aby poinformować administrację w tickecie!"
     )
     embed = discord.Embed(title="💳 PŁATNOŚCI", description=opis, color=discord.Color.from_rgb(30, 144, 255))
