@@ -165,10 +165,11 @@ class CennikPanelView(ui.View):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class ZamowienieModal(ui.Modal):
-    def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
+    def __init__(self, pakiet_nazwa: str, cena_baza: float, ilosc: int):
         super().__init__(title="Potrzebne informacje")
         self.pakiet_nazwa = pakiet_nazwa
-        self.cena_wyjsciowa = cena_wyjsciowa
+        self.cena_calkowita = cena_baza * ilosc
+        self.ilosc = ilosc
 
     nick_dc = ui.TextInput(
         label="TWÓJ NICK NA DISCORDZIE:", 
@@ -200,8 +201,8 @@ class ZamowienieModal(ui.Modal):
             description="Twoje zgłoszenie zamówienia zostało zapisane.", 
             color=discord.Color.green()
         )
-        embed.add_field(name="📦 Wybrana usługa:", value=f"• **1x {self.pakiet_nazwa}**", inline=False)
-        embed.add_field(name="💰 Cena:", value=f"**{self.cena_wyjsciowa:.2f} zł**", inline=False)
+        embed.add_field(name="📦 Wybrana usługa:", value=f"• **{self.ilosc}x {self.pakiet_nazwa}**", inline=False)
+        embed.add_field(name="💰 Cena całkowita:", value=f"**{self.cena_calkowita:.2f} zł**", inline=False)
         embed.add_field(name="👤 Nick Discord:", value=self.nick_dc.value, inline=True)
         embed.add_field(name="💳 Płatność:", value=self.platnosc_text.value, inline=True)
         
@@ -212,6 +213,25 @@ class ZamowienieModal(ui.Modal):
         view.add_item(ui.Button(label="Opłać zamówienie", url="https://tipply.pl/@hakerroblox", style=discord.ButtonStyle.link, emoji="💳"))
         
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+
+class IloscSelect(ui.Select):
+    def __init__(self, pakiet_nazwa: str, cena_baza: float):
+        self.pakiet_nazwa = pakiet_nazwa
+        self.cena_baza = cena_baza
+        opcje = [
+            discord.SelectOption(label="1 Sztuka", description=f"Cena: {cena_baza:.2f} zł", emoji="1️⃣", value="1"),
+            discord.SelectOption(label="2 Sztuki", description=f"Cena: {cena_baza * 2:.2f} zł", emoji="2️⃣", value="2"),
+        ]
+        super().__init__(placeholder="Wybierz liczbę sztuk...", min_values=1, max_values=1, options=opcje)
+
+    async def callback(self, interaction: discord.Interaction):
+        ilosc = int(self.values[0])
+        await interaction.response.send_modal(ZamowienieModal(self.pakiet_nazwa, self.cena_baza, ilosc))
+
+class IloscSelectView(ui.View):
+    def __init__(self, pakiet_nazwa: str, cena_baza: float):
+        super().__init__(timeout=60)
+        self.add_item(IloscSelect(pakiet_nazwa, cena_baza))
 
 class PakietSelect(ui.Select):
     def __init__(self):
@@ -225,11 +245,14 @@ class PakietSelect(ui.Select):
     async def callback(self, interaction: discord.Interaction):
         wybor = self.values[0]
         if wybor == "start":
-            await interaction.response.send_modal(ZamowienieModal("Pakiet START", 19.99))
+            view = IloscSelectView("Pakiet START", 19.99)
+            await interaction.response.send_message("Wybierz liczbę sztuk dla pakietu **START**:", view=view, ephemeral=True)
         elif wybor == "basic":
-            await interaction.response.send_modal(ZamowienieModal("Pakiet BASIC", 39.99))
+            view = IloscSelectView("Pakiet BASIC", 39.99)
+            await interaction.response.send_message("Wybierz liczbę sztuk dla pakietu **BASIC**:", view=view, ephemeral=True)
         elif wybor == "premium":
-            await interaction.response.send_modal(ZamowienieModal("Pakiet PREMIUM", 69.99))
+            view = IloscSelectView("Pakiet PREMIUM", 69.99)
+            await interaction.response.send_message("Wybierz liczbę sztuk dla pakietu **PREMIUM**:", view=view, ephemeral=True)
 
 class WyborOfertyView(ui.View):
     def __init__(self):
@@ -256,7 +279,6 @@ class TicketCloseView(ui.View):
 
     @ui.button(label="Zamknij ticket", style=discord.ButtonStyle.danger, custom_id="zamknij_ticket_btn", emoji="🔒")
     async def close(self, interaction: discord.Interaction, button: ui.Button):
-        # Sprawdzamy, czy użytkownik ma uprawnienia do zarządzania kanałami LUB posiadaną rolę "🎫 • Support"
         has_support_role = any(role.name == "🎫 • Support" for role in interaction.user.roles)
         
         if not interaction.user.guild_permissions.manage_channels and not has_support_role:
@@ -267,9 +289,8 @@ class TicketCloseView(ui.View):
         await interaction.channel.delete()
 
 class TicketPanelView(ui.View):
-    def __init__(self, rola_id: int = None):
+    def __init__(self):
         super().__init__(timeout=None)
-        self.rola_id = rola_id
 
     @ui.button(label="Otwórz Ticket", style=discord.ButtonStyle.primary, custom_id="otworz_ticket_btn", emoji="📩")
     async def open_t(self, interaction: discord.Interaction, button: ui.Button):
@@ -279,17 +300,9 @@ class TicketPanelView(ui.View):
             interaction.user: discord.PermissionOverwrite(read_messages=True),
         }
         
-        # Jeśli przekazano ID roli, użyj jej. Jeśli nie, spróbuj znaleźć rolę po nazwie "🎫 • Support"
-        target_role_id = self.rola_id
-        if not target_role_id:
-            support_role = discord.utils.get(interaction.guild.roles, name="🎫 • Support")
-            if support_role:
-                target_role_id = support_role.id
-
-        if target_role_id:
-            rola = interaction.guild.get_role(target_role_id)
-            if rola:
-                overwrites[rola] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        support_role = discord.utils.get(interaction.guild.roles, name="🎫 • Support")
+        if support_role:
+            overwrites[support_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
         ch = await interaction.guild.create_text_channel(f"ticket-{interaction.user.name}", overwrites=overwrites)
         embed = discord.Embed(title="CENTRUM POMOCY — HAKEROLANDIA", description=f"Witaj {interaction.user.mention}! Administracja wkrótce odpowie.", color=discord.Color.blue())
@@ -554,12 +567,10 @@ async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = 
     await interaction.followup.send("✅ Wysłano panel sklepu.", ephemeral=True)
 
 @bot.tree.command(name="ticket-setup", description="[Właściciel] Wysyła panel ticketów")
-@app_commands.describe(rola_id="ID roli administracyjnej (opcjonalnie, domyślnie '🎫 • Support')")
 @is_owner()
-async def cmd_ticket_setup(interaction: discord.Interaction, rola_id: str = None):
+async def cmd_ticket_setup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
-    rid = int(rola_id) if rola_id else None
-    view = TicketPanelView(rid)
+    view = TicketPanelView()
     embed = discord.Embed(title="📩 CENTRUM WSPARCIA", description="Kliknij, aby otworzyć ticket.", color=discord.Color.blue())
     await interaction.channel.send(embed=embed, view=view)
     await interaction.followup.send("✅ Wysłano panel ticketów.", ephemeral=True)
