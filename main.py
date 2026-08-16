@@ -129,7 +129,6 @@ class CennikPanelView(ui.View):
     async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
         cennik_tekst = (
             "**📄 CENNIK HAKEROLANDIA**\n"
-            "**HAKEROLANDIA**\n\n"
             "⚠️ **UWAGA!**\n"
             "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
             "🟢 **START — 19,99 zł**\n"
