@@ -322,7 +322,7 @@ class OpinieModal(ui.Modal):
     def __init__(self):
         super().__init__(title="WYSTAW OPINIĘ")
 
-    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
+    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. haker.roblox", required=True, max_length=100)
     tresc = ui.TextInput(label="TREŚĆ OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
     jakosc = ui.TextInput(label="JAKOŚĆ I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
     czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
@@ -364,6 +364,11 @@ class OpiniePanelView(ui.View):
 
     @ui.button(label="Wystaw Opinię", style=discord.ButtonStyle.success, custom_id="przycisk_wystaw_opinie", emoji="⭐")
     async def open_opinie_modal(self, interaction: discord.Interaction, button: ui.Button):
+        has_klient = any(role.name.lower() == "klient" for role in interaction.user.roles)
+        if not has_klient:
+            await interaction.response.send_message("❌ Nie masz uprawnień! Tylko osoby z rangą **Klient** mogą wystawiać opinie.", ephemeral=True)
+            return
+        
         await interaction.response.send_modal(OpinieModal())
 
 # --- 5. KOMENDY SLASH ---
@@ -472,6 +477,11 @@ async def cmd_cennik_setup(interaction: discord.Interaction):
 
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
+    has_klient = any(role.name.lower() == "klient" for role in interaction.user.roles)
+    if not has_klient:
+        await interaction.response.send_message("❌ Nie masz uprawnień! Tylko osoby z rangą **Klient** mogą wystawiać opinie.", ephemeral=True)
+        return
+        
     await interaction.response.send_modal(OpinieModal())
 
 @bot.tree.command(name="opinie-setup", description="[Właściciel] Wysyła panel z przyciskiem do wystawiania opinii")
