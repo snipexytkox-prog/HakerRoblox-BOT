@@ -22,8 +22,8 @@ kody_polecajace = {}
 
 # 2. Baza oficjalnych kodów rabatowych (zarządzana przez admina): { kod_str: {"procent_znizki": float} }
 kody_rabatowe = {
-    "HakerRoblox": {"procent_znizki": 5.0}  # Twój kod rabatowy na 5% zniżki (możesz dopisywać kolejne)
-    "Haker15": {"procent_znizki": 5.0}  # Twój kod rabatowy na 5% zniżki (możesz dopisywać kolejne)
+    "HAKERROBLOX": {"procent_znizki": 5.0},
+    "HAKER15": {"procent_znizki": 5.0}
 }
 
 def is_owner():
@@ -197,7 +197,7 @@ class ZamowienieModal(ui.Modal):
 
     kod_wejsciowy = ui.TextInput(
         label="KOD RABATOWY LUB POLECAJĄCY:", 
-        placeholder="Wpisz np. HakerRoblox lub kod gracza", 
+        placeholder="Wpisz np. Haker15 lub kod gracza", 
         required=False, 
         max_length=30
     )
@@ -218,7 +218,7 @@ class ZamowienieModal(ui.Modal):
         wpisany_kod = self.kod_wejsciowy.value.strip().upper()
 
         if wpisany_kod:
-            # 1. Sprawdzamy czy to oficjalny kod rabatowy (np. HAKERROBLOX)
+            # 1. Sprawdzamy czy to oficjalny kod rabatowy (np. HAKERROBLOX / HAKER15)
             if wpisany_kod in kody_rabatowe:
                 procent = kody_rabatowe[wpisany_kod]["procent_znizki"]
                 rabat = cena_calkowita * (procent / 100.0)
@@ -227,7 +227,6 @@ class ZamowienieModal(ui.Modal):
 
             # 2. Sprawdzamy czy to kod polecający użytkownika
             elif wpisany_kod in kody_polecajace:
-                # Standardowy rabat 10% przy kodzie polecającym gracza (możesz zmienić)
                 rabat = cena_calkowita * 0.10
                 cena_calkowita -= rabat
                 znizka_info = f"⭐ Kod polecający `{wpisany_kod}`: -10% (-{rabat:.2f} zł)"
@@ -328,12 +327,10 @@ class StworzKodModal(ui.Modal):
         kod = self.nazwa_kodu.value.strip().upper()
         user_id = interaction.user.id
 
-        # Blokada: czy kod jest w bazach administracyjnych
         if kod in kody_rabatowe:
             await interaction.followup.send("❌ Ta nazwa jest zarezerwowana dla oficjalnego kodu rabatowego sklepu!", ephemeral=True)
             return
 
-        # Sprawdzenie czy użytkownik ma już swój kod
         for k, v in kody_polecajace.items():
             if v["owner_id"] == user_id:
                 await interaction.followup.send(f"❌ Masz już aktywny kod polecający: **{k}**! Możesz posiadać tylko jeden kod.", ephemeral=True)
