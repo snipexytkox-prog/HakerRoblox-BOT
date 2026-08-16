@@ -14,10 +14,8 @@ GUILD_ID = int(GUILD_ID_STR) if GUILD_ID_STR else 0
 OWNER_ID_STR = os.getenv("OWNER_ID")
 OWNER_ID = int(OWNER_ID_STR) if OWNER_ID_STR else 0
 
-user_balances = {}
-yt_subscriptions = {}
 trade_blocks = set() # Przechowuje ID użytkowników z zablokowanym tradem (/off_trade)
-user_profiles = {} # Przechowuje opinie i legitchecki
+yt_subscriptions = {}
 
 def is_owner():
     async def predicate(interaction: discord.Interaction):
@@ -207,6 +205,56 @@ class MainPanelView(ui.View):
         )
         await interaction.response.send_message(embed=embed, view=WyborOfertyView(), ephemeral=True)
 
+    @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik", emoji="📄")
+    async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
+        cennik_tekst = (
+            "🖥️ **ZAMÓW SWÓJ SERWER**\n"
+            "**HAKEROLANDIA**\n\n"
+            "⚠️ **UWAGA!**\n"
+            "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
+            "🟢 **START — 19,99 zł**\n"
+            "• Max 10 kategorii / 30 kanałów\n"
+            "• Podstawowe rangi\n"
+            "• Lobby\n"
+            "• Zabezpieczenia\n"
+            "• Własne preferencje\n\n"
+            "🔵 **BASIC — 39,99 zł**\n"
+            "• Max 20 kategorii / 50 kanałów\n"
+            "• Rangi użytkowników i administracji\n"
+            "• Ekonomia + sklep\n"
+            "• Selfrole\n"
+            "• Invite Logger\n"
+            "• Lobby + statystyki\n"
+            "• Zabezpieczenia\n\n"
+            "🟣 **PREMIUM — 69,99 zł**\n"
+            "• Nielimitowane kategorie i kanały\n"
+            "• Rozbudowane rangi\n"
+            "• Ekonomia + sklep\n"
+            "• Logi + statystyki\n"
+            "• Zaawansowane zabezpieczenia\n"
+            "• Lobby + regulamin\n"
+            "• Pomoc w rozwoju serwera\n\n"
+            "💳 **PŁATNOŚĆ**\n"
+            "BLIK • Revolut\n"
+            "⏱️ Realizacja do 48h\n\n"
+            "⭐ Po odbiorze możesz zostawić opinię!\n\n"
+            "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
+        )
+        embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
+        
+        # Widok z przyciskiem "Odrzuć tę wiadomość" (usuwa wiadomość ephemeral u użytkownika)
+        view = ui.View()
+        dismiss_button = ui.Button(label="Odrzuć tę wiadomość", style=discord.ButtonStyle.danger, emoji="❌")
+        
+        async def dismiss_callback(i: discord.Interaction):
+            await i.response.defer()
+            await i.delete_original_response()
+
+        dismiss_button.callback = dismiss_callback
+        view.add_item(dismiss_button)
+
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
 # --- 2. SYSTEM TICKETÓW ---
 class TicketCloseView(ui.View):
     def __init__(self):
@@ -378,31 +426,80 @@ async def cmd_profil(interaction: discord.Interaction, nick_gracza: discord.Memb
 
 @bot.tree.command(name="cennik", description="[Sklep] Wyświetla oficjalny cennik usług Hakerolandia")
 async def cmd_cennik(interaction: discord.Interaction):
-    embed = discord.Embed(
-        title="📋 OFICJALNY CENNIK — HAKEROLANDIA",
-        description="Sprawdź aktualne ceny naszych pakietów i usług:",
-        color=discord.Color.green()
+    cennik_tekst = (
+        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
+        "**HAKEROLANDIA**\n\n"
+        "⚠️ **UWAGA!**\n"
+        "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
+        "🟢 **START — 19,99 zł**\n"
+        "• Max 10 kategorii / 30 kanałów\n"
+        "• Podstawowe rangi\n"
+        "• Lobby\n"
+        "• Zabezpieczenia\n"
+        "• Własne preferencje\n\n"
+        "🔵 **BASIC — 39,99 zł**\n"
+        "• Max 20 kategorii / 50 kanałów\n"
+        "• Rangi użytkowników i administracji\n"
+        "• Ekonomia + sklep\n"
+        "• Selfrole\n"
+        "• Invite Logger\n"
+        "• Lobby + statystyki\n"
+        "• Zabezpieczenia\n\n"
+        "🟣 **PREMIUM — 69,99 zł**\n"
+        "• Nielimitowane kategorie i kanały\n"
+        "• Rozbudowane rangi\n"
+        "• Ekonomia + sklep\n"
+        "• Logi + statystyki\n"
+        "• Zaawansowane zabezpieczenia\n"
+        "• Lobby + regulamin\n"
+        "• Pomoc w rozwoju serwera\n\n"
+        "💳 **PŁATNOŚĆ**\n"
+        "BLIK • Revolut\n"
+        "⏱️ Realizacja do 48h\n\n"
+        "⭐ Po odbiorze możesz zostawić opinię!\n\n"
+        "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
     )
-    embed.add_field(name="🟢 Pakiet START", value="**19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby", inline=False)
-    embed.add_field(name="🔵 Pakiet BASIC", value="**39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep", inline=False)
-    embed.add_field(name="🟣 Pakiet PREMIUM", value="**69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Zaawansowane zabezpieczenia", inline=False)
-    embed.set_footer(text="Płatność: BLIK / REVOLUT • Realizacja do 48h")
+    embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="cennik-setup", description="[Właściciel] Wysyła stały panel cennika na kanał")
 @is_owner()
 async def cmd_cennik_setup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
-    embed = discord.Embed(
-        title="📋 CENNIK USŁUG — HAKEROLANDIA",
-        description="Zapoznaj się z naszym cennikiem usług serwerowych:",
-        color=discord.Color.green()
+    cennik_tekst = (
+        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
+        "**HAKEROLANDIA**\n\n"
+        "⚠️ **UWAGA!**\n"
+        "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
+        "🟢 **START — 19,99 zł**\n"
+        "• Max 10 kategorii / 30 kanałów\n"
+        "• Podstawowe rangi\n"
+        "• Lobby\n"
+        "• Zabezpieczenia\n"
+        "• Własne preferencje\n\n"
+        "🔵 **BASIC — 39,99 zł**\n"
+        "• Max 20 kategorii / 50 kanałów\n"
+        "• Rangi użytkowników i administracji\n"
+        "• Ekonomia + sklep\n"
+        "• Selfrole\n"
+        "• Invite Logger\n"
+        "• Lobby + statystyki\n"
+        "• Zabezpieczenia\n\n"
+        "🟣 **PREMIUM — 69,99 zł**\n"
+        "• Nielimitowane kategorie i kanały\n"
+        "• Rozbudowane rangi\n"
+        "• Ekonomia + sklep\n"
+        "• Logi + statystyki\n"
+        "• Zaawansowane zabezpieczenia\n"
+        "• Lobby + regulamin\n"
+        "• Pomoc w rozwoju serwera\n\n"
+        "💳 **PŁATNOŚĆ**\n"
+        "BLIK • Revolut\n"
+        "⏱️ Realizacja do 48h\n\n"
+        "⭐ Po odbiorze możesz zostawić opinię!\n\n"
+        "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
     )
-    embed.add_field(name="🟢 Pakiet START", value="**19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby", inline=False)
-    embed.add_field(name="🔵 Pakiet BASIC", value="**39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep", inline=False)
-    embed.add_field(name="🟣 Pakiet PREMIUM", value="**69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Zaawansowane zabezpieczenia", inline=False)
-    embed.set_footer(text="Płatność: BLIK / REVOLUT • Realizacja do 48h")
-    
+    embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
     await interaction.channel.send(embed=embed)
     await interaction.followup.send("✅ Wysłano panel cennika na kanał.", ephemeral=True)
 
@@ -452,10 +549,10 @@ async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = 
     opis = (
         "🖥️ **ZAMÓW SWÓJ SERWER**\n**HAKEROLANDIA**\n\n"
         "⚠️ **UWAGA!**\nZamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
-        "🟢 **START — 19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby\n\n"
-        "🔵 **BASIC — 39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep\n\n"
-        "🟣 **PREMIUM — 69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Zaawansowane zabezpieczenia\n\n"
-        "💳 **PŁATNOŚĆ**\nBLIK • REVOLUT\n\n⏱️ Realizacja do 48h"
+        "🟢 **START — 19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby\n• Zabezpieczenia\n• Własne preferencje\n\n"
+        "🔵 **BASIC — 39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep\n• Selfrole\n• Invite Logger\n• Lobby + statystyki\n• Zabezpieczenia\n\n"
+        "🟣 **PREMIUM — 69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Logi + statystyki\n• Zaawansowane zabezpieczenia\n• Lobby + regulamin\n• Pomoc w rozwoju serwera\n\n"
+        "💳 **PŁATNOŚĆ**\nBLIK • Revolut\n\n⏱️ Realizacja do 48h\n\n⭐ Po odbiorze możesz zostawić opinię!\n\n━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
     )
     embed = discord.Embed(description=opis, color=discord.Color.blurple())
     if obrazek_url:
