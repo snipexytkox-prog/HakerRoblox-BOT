@@ -427,8 +427,7 @@ async def cmd_profil(interaction: discord.Interaction, nick_gracza: discord.Memb
 @bot.tree.command(name="cennik", description="[Sklep] Wyświetla oficjalny cennik usług Hakerolandia")
 async def cmd_cennik(interaction: discord.Interaction):
     cennik_tekst = (
-        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-        "**HAKEROLANDIA**\n\n"
+        "📄 **CENNIK HAKEROLANDIA**\n"
         "⚠️ **UWAGA!**\n"
         "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
         "🟢 **START — 19,99 zł**\n"
