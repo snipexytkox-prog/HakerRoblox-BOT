@@ -41,10 +41,9 @@ class ZaawansowanyBot(commands.Bot):
         
         check_youtube_videos.start()
 
-        # Usunięto copy_global_to, aby komendy nie duplikowały się na serwerze
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
-            self.tree.clear_commands(guild=guild) # Czyszczenie starego śmietnika z duplikatami
+            self.tree.clear_commands(guild=guild)
             await self.tree.sync(guild=guild)
             print("✅ Zsynchronizowano unikalne komendy dla serwera testowego!")
         else:
@@ -257,8 +256,11 @@ class TicketCloseView(ui.View):
 
     @ui.button(label="Zamknij ticket", style=discord.ButtonStyle.danger, custom_id="zamknij_ticket_btn", emoji="🔒")
     async def close(self, interaction: discord.Interaction, button: ui.Button):
-        if not interaction.user.guild_permissions.manage_channels:
-            await interaction.response.send_message("❌ Nie masz uprawnień do zamykania ticketów", ephemeral=True)
+        # Sprawdzamy, czy użytkownik ma uprawnienia do zarządzania kanałami LUB posiadaną rolę "🎫 • Support"
+        has_support_role = any(role.name == "🎫 • Support" for role in interaction.user.roles)
+        
+        if not interaction.user.guild_permissions.manage_channels and not has_support_role:
+            await interaction.response.send_message("❌ Nie masz uprawnień do zamykania ticketów (wymagana rola **🎫 • Support**)", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -276,8 +278,16 @@ class TicketPanelView(ui.View):
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True),
         }
-        if self.rola_id:
-            rola = interaction.guild.get_role(self.rola_id)
+        
+        # Jeśli przekazano ID roli, użyj jej. Jeśli nie, spróbuj znaleźć rolę po nazwie "🎫 • Support"
+        target_role_id = self.rola_id
+        if not target_role_id:
+            support_role = discord.utils.get(interaction.guild.roles, name="🎫 • Support")
+            if support_role:
+                target_role_id = support_role.id
+
+        if target_role_id:
+            rola = interaction.guild.get_role(target_role_id)
             if rola:
                 overwrites[rola] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
@@ -544,7 +554,7 @@ async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = 
     await interaction.followup.send("✅ Wysłano panel sklepu.", ephemeral=True)
 
 @bot.tree.command(name="ticket-setup", description="[Właściciel] Wysyła panel ticketów")
-@app_commands.describe(rola_id="ID roli administracyjnej")
+@app_commands.describe(rola_id="ID roli administracyjnej (opcjonalnie, domyślnie '🎫 • Support')")
 @is_owner()
 async def cmd_ticket_setup(interaction: discord.Interaction, rola_id: str = None):
     await interaction.response.defer(ephemeral=True)
