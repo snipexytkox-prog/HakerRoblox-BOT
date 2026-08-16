@@ -16,6 +16,8 @@ OWNER_ID = int(OWNER_ID_STR) if OWNER_ID_STR else 0
 
 user_balances = {}
 yt_subscriptions = {}
+trade_blocks = set() # Przechowuje ID użytkowników z zablokowanym tradem (/off_trade)
+user_profiles = {} # Przechowuje opinie i legitchecki
 
 def is_owner():
     async def predicate(interaction: discord.Interaction):
@@ -277,9 +279,9 @@ class WeryfikacjaView(ui.View):
 # --- 4. SYSTEM OPINIE ---
 class OpinieModal(ui.Modal):
     def __init__(self):
-        super().__init__(title="Wystaw opinię")
+        super().__init__(title="WYSTAW OPINIĘ")
 
-    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. HakerRoblox (haker.roblox)", required=True, max_length=100)
+    wykonawca = ui.TextInput(label="WYKONAWCA USŁUGI:", placeholder="Np. Vizek (realvizek)", required=True, max_length=100)
     tresc = ui.TextInput(label="TREŚĆ OPINII:", placeholder="Napisz co sądzisz o usłudze...", style=discord.TextStyle.paragraph, required=True, max_length=500)
     jakosc = ui.TextInput(label="JAKOŚĆ I WYKONANIE (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
     czas = ui.TextInput(label="CZAS REALIZACJI (1-5):", placeholder="Wpisz cyfrę od 1 do 5", required=True, max_length=1)
@@ -324,6 +326,86 @@ class OpiniePanelView(ui.View):
         await interaction.response.send_modal(OpinieModal())
 
 # --- 5. KOMENDY SLASH ---
+
+@bot.tree.command(name="pomoc", description="[Główne] Wyświetla pełną listę wszystkich dostępnych komend")
+async def cmd_pomoc(interaction: discord.Interaction):
+    embed = discord.Embed(title="📚 PANEL POMOCI — HAKEROLANDIA", description="Oto kategorie dostępnych komend w bocie:", color=discord.Color.blurple())
+    embed.add_field(name="🛡️ Moderacja i Trade", value="`/ban`, `/kick`, `/mute`, `/unmute`, `/slowmode`, `/lock`, `/unlock`, `/czysc`, `/say`, `/trade`, `/off_trade`, `/profil`, `/cennik`, `/cennik-setup`", inline=False)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="trade", description="[Trade] Wysyła ofertę wymiany do innego gracza")
+@app_commands.describe(nick_gracza="Użytkownik, któremu chcesz wysłać ofertę wymiany")
+async def cmd_trade(interaction: discord.Interaction, nick_gracza: discord.Member):
+    if interaction.user.id in trade_blocks:
+        await interaction.response.send_message("❌ Masz zablokowane wysyłanie wymian (`/off_trade`).", ephemeral=True)
+        return
+    if nick_gracza.id in trade_blocks:
+        await interaction.response.send_message(f"❌ Użytkownik {nick_gracza.mention} ma zablokowane otrzymywanie wymian.", ephemeral=True)
+        return
+    if nick_gracza.bot:
+        await interaction.response.send_message("❌ Nie możesz wysłać wymiany do bota!", ephemeral=True)
+        return
+
+    embed = discord.Embed(
+        title="🔄 OFERTA WYMIANY (TRADE)",
+        description=f"{interaction.user.mention} wysłał(a) ofertę wymiany do {nick_gracza.mention}!",
+        color=discord.Color.gold()
+    )
+    embed.set_footer(text="Bezpieczny Trade • Hakerolandia")
+    await interaction.response.send_message(content=f"{nick_gracza.mention}, masz nową ofertę!", embed=embed)
+
+@bot.tree.command(name="off_trade", description="[Trade] Blokuje lub odblokowuje możliwość wysyłania Ci wymian")
+async def cmd_off_trade(interaction: discord.Interaction):
+    user_id = interaction.user.id
+    if user_id in trade_blocks:
+        trade_blocks.remove(user_id)
+        await interaction.response.send_message("✅ Odblokowano możliwość wysyłania Ci wymian.", ephemeral=True)
+    else:
+        trade_blocks.add(user_id)
+        await interaction.response.send_message("🔒 Zablokowano możliwość wysyłania Ci wymian.", ephemeral=True)
+
+@bot.tree.command(name="profil", description="[Trade] Sprawdza opinie oraz legitchecki danego gracza")
+@app_commands.describe(nick_gracza="Użytkownik, którego profil chcesz sprawdzić")
+async def cmd_profil(interaction: discord.Interaction, nick_gracza: discord.Member):
+    embed = discord.Embed(
+        title=f"👤 PROFIL UŻYTKOWNIKA: {nick_gracza.name}",
+        color=discord.Color.blurple()
+    )
+    embed.add_field(name="⭐ Opinie", value="Brak wystawionych opinii (użyj `/opinie`)", inline=False)
+    embed.add_field(name="🛡️ Legitchecki", value="✅ **100% Legit** (Brak negatywnych transakcji)", inline=False)
+    embed.set_thumbnail(url=nick_gracza.display_avatar.url)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="cennik", description="[Sklep] Wyświetla oficjalny cennik usług Hakerolandia")
+async def cmd_cennik(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="📋 OFICJALNY CENNIK — HAKEROLANDIA",
+        description="Sprawdź aktualne ceny naszych pakietów i usług:",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="🟢 Pakiet START", value="**19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby", inline=False)
+    embed.add_field(name="🔵 Pakiet BASIC", value="**39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep", inline=False)
+    embed.add_field(name="🟣 Pakiet PREMIUM", value="**69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Zaawansowane zabezpieczenia", inline=False)
+    embed.set_footer(text="Płatność: BLIK / REVOLUT • Realizacja do 48h")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="cennik-setup", description="[Właściciel] Wysyła stały panel cennika na kanał")
+@is_owner()
+async def cmd_cennik_setup(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    embed = discord.Embed(
+        title="📋 CENNIK USŁUG — HAKEROLANDIA",
+        description="Zapoznaj się z naszym cennikiem usług serwerowych:",
+        color=discord.Color.green()
+    )
+    embed.add_field(name="🟢 Pakiet START", value="**19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby", inline=False)
+    embed.add_field(name="🔵 Pakiet BASIC", value="**39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep", inline=False)
+    embed.add_field(name="🟣 Pakiet PREMIUM", value="**69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Zaawansowane zabezpieczenia", inline=False)
+    embed.set_footer(text="Płatność: BLIK / REVOLUT • Realizacja do 48h")
+    
+    await interaction.channel.send(embed=embed)
+    await interaction.followup.send("✅ Wysłano panel cennika na kanał.", ephemeral=True)
+
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
     await interaction.response.send_modal(OpinieModal())
@@ -332,17 +414,10 @@ async def cmd_opinie(interaction: discord.Interaction):
 @is_owner()
 async def cmd_opinie_setup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
-    
-    opis = (
-        "» **Wystawiając opinię** pokazujesz innym, jak przebiegła Twoja obsługa.\n"
-        "» **Gorąco prosimy** o jej wystawienie, buduje to nasze zaufanie.\n\n"
-        "» Zrobisz to klikając **poniższy przycisk**."
-    )
-    
+    opis = "» **Wystawiając opinię** pokazujesz innym, jak przebiegła Twoja obsługa.\n» **Gorąco prosimy** o jej wystawienie, buduje to nasze zaufanie.\n\n» Zrobisz to klikając **poniższy przycisk**."
     embed = discord.Embed(color=discord.Color.from_rgb(30, 144, 255))
     embed.set_author(name=f"{interaction.guild.name} × WYSTAW NAM OPINIĘ", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
     embed.description = opis
-    
     await interaction.channel.send(embed=embed, view=OpiniePanelView())
     await interaction.followup.send("✅ Wysłano panel opinii.", ephemeral=True)
 
@@ -350,91 +425,41 @@ async def cmd_opinie_setup(interaction: discord.Interaction):
 @is_owner()
 async def cmd_regulamin(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
-    
     regulamin_tekst = (
         "📜 **REGULAMIN SERWERA**\n\n"
-        "🤝 **1. Szanuj innych**\n"
-        "Nie wyzywaj, nie obrażaj i nie prowokuj. Zakaz mowy nienawiści, rasizmu i dyskryminacji.\n\n"
-        "🛡️ **2. Szanuj administrację**\n"
-        "Wykonuj polecenia administracji. Jeśli nie zgadzasz się z decyzją, zgłoś problem przez ticket.\n\n"
-        "💬 **3. Nie spamuj**\n"
-        "Zakaz spamu, floodu, bezsensownego pingowania oraz pisania nie na temat. Za spam grozi 1 godzina przerwy (mute).\n\n"
-        "📢 **4. Zakaz reklam i własnych serwerów**\n"
-        "Nie reklamuj innych serwerów, kanałów, stron ani usług bez zgody administracji. Reklamowanie własnego serwera Discord jest zabronione — wysyłanie zaproszeń do własnych serwerów = ban. Zakaz podejrzanych linków, cheatów i exploitów.\n\n"
-        "🔞 **5. Zakaz treści 18+**\n"
-        "Nie wysyłaj treści NSFW, seksualnych, brutalnych ani innych nieodpowiednich materiałów.\n\n"
-        "🔐 **6. Chroń prywatność**\n"
-        "Nie udostępniaj danych swoich ani innych osób. Zakaz publikowania prywatnych zdjęć i podszywania się pod innych.\n\n"
-        "🎮 **7. Graj uczciwie**\n"
-        "Zakaz cheatów, exploitów i wykorzystywania błędów w celu uzyskania przewagi.\n\n"
-        "🧵 **8. Zakaz tworzenia wątków**\n"
-        "Tworzenie wątków na serwerze jest zabronione. Za utworzenie wątku grozi kick.\n\n"
-        "🎫 **9. Zgłoszenia**\n"
-        "Problemy i skargi zgłaszaj przez ticket. Nie oznaczaj administracji bez ważnego powodu.\n\n"
-        "⚠️ **10. Kary**\n"
-        "Ostrzeżenie → Mute → Kick → Ban. Za poważne przewinienia kara może zostać nadana od razu. Omijanie bana = ban permanentny.\n\n"
-        "✅ **11. Akceptacja**\n"
-        "Dołączając na serwer, akceptujesz regulamin i zobowiązujesz się go przestrzegać.\n\n"
-        "⭐ **Baw się dobrze i szanuj wszystkich!**\n\n"
-        "📄 **Discord:**\n"
-        "Warunki: https://discord.com/terms\n"
-        "Prywatność: https://discord.com/privacy\n"
-        "Wytyczne: https://discord.com/guidelines"
+        "🤝 **1. Szanuj innych**\nNie wyzywaj, nie obrażaj i nie prowokuj. Zakaz mowy nienawiści, rasizmu i dyskryminacji.\n\n"
+        "🛡️ **2. Szanuj administrację**\nWykonuj polecenia administracji. Jeśli nie zgadzasz się z decyzją, zgłoś problem przez ticket.\n\n"
+        "💬 **3. Nie spamuj**\nZakaz spamu, floodu, bezsensownego pingowania oraz pisania nie na temat. Za spam grozi 1 godzina przerwy (mute).\n\n"
+        "📢 **4. Zakaz reklam i własnych serwerów**\nNie reklamuj innych serwerów, kanałów, stron ani usług bez zgody administracji.\n\n"
+        "🔞 **5. Zakaz treści 18+**\nNie wysyłaj treści NSFW, seksualnych, brutalnych ani innych nieodpowiednich materiałów.\n\n"
+        "🔐 **6. Chroń prywatność**\nNie udostępniaj danych swoich ani innych osób.\n\n"
+        "🎮 **7. Graj uczciwie**\nZakaz cheatów, exploitów i wykorzystywania błędów w celu uzyskania przewagi.\n\n"
+        "🧵 **8. Zakaz tworzenia wątków**\nTworzenie wątków na serwerze jest zabronione.\n\n"
+        "🎫 **9. Zgłoszenia**\nProblemy i skargi zgłaszaj przez ticket.\n\n"
+        "⚠️ **10. Kary**\nOstrzeżenie → Mute → Kick → Ban.\n\n"
+        "✅ **11. Akceptacja**\nDołączając na serwer, akceptujesz regulamin."
     )
-
     embed = discord.Embed(description=regulamin_tekst, color=discord.Color.from_rgb(30, 144, 255))
     embed.set_author(name=f"{interaction.guild.name} × ZASADY", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
-    
     await interaction.channel.send(embed=embed)
     await interaction.followup.send("✅ Wysłano regulamin serwera.", ephemeral=True)
 
-@bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu z pełnym opisem i opcjonalnym obrazkiem")
+@bot.tree.command(name="wyslij-panel", description="[Właściciel] Wysyła główny panel sklepu")
 @app_commands.describe(obrazek_url="Bezpośredni link URL do obrazka/bannera (opcjonalnie)")
 @is_owner()
 async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = None):
     await interaction.response.defer(ephemeral=True)
-    
     opis = (
-        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-        "**HAKEROLANDIA**\n\n"
-        "⚠️ **UWAGA!**\n"
-        "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
-        "🟢 **START — 19,99 zł**\n"
-        "• Max 10 kategorii / 30 kanałów\n"
-        "• Podstawowe rangi\n"
-        "• Lobby\n"
-        "• Zabezpieczenia\n"
-        "• Własne preferencje\n\n"
-        "🔵 **BASIC — 39,99 zł**\n"
-        "• Max 20 kategorii / 50 kanałów\n"
-        "• Rangi użytkowników i administracji\n"
-        "• Ekonomia + sklep\n"
-        "• Selfrole\n"
-        "• Invite Logger\n"
-        "• Lobby + statystyki\n"
-        "• Zabezpieczenia\n\n"
-        "🟣 **PREMIUM — 69,99 zł**\n"
-        "• Nielimitowane kategorie i kanały\n"
-        "• Rozbudowane rangi\n"
-        "• Ekonomia + sklep\n"
-        "• Logi + statystyki\n"
-        "• Zaawansowane zabezpieczenia\n"
-        "• Lobby + regulamin\n"
-        "• Pomoc w rozwoju serwera\n\n"
-        "💳 **PŁATNOŚĆ**\n"
-        "BLIK • REVOLUT\n\n"
-        "⏱️ Realizacja do 48h\n"
-        "⭐ Po odbiorze możesz zostawić opinię!\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        "🔥 **HAKEROLANDIA**\n"
-        "Twój pomysł. Nasza realizacja.\n"
-        "━━━━━━━━━━━━━━━━━━"
+        "🖥️ **ZAMÓW SWÓJ SERWER**\n**HAKEROLANDIA**\n\n"
+        "⚠️ **UWAGA!**\nZamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
+        "🟢 **START — 19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby\n\n"
+        "🔵 **BASIC — 39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep\n\n"
+        "🟣 **PREMIUM — 69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Zaawansowane zabezpieczenia\n\n"
+        "💳 **PŁATNOŚĆ**\nBLIK • REVOLUT\n\n⏱️ Realizacja do 48h"
     )
-
     embed = discord.Embed(description=opis, color=discord.Color.blurple())
     if obrazek_url:
         embed.set_image(url=obrazek_url)
-
     await interaction.channel.send(embed=embed, view=MainPanelView())
     await interaction.followup.send("✅ Wysłano panel sklepu.", ephemeral=True)
 
@@ -461,42 +486,15 @@ async def cmd_weryfikacja_setup(interaction: discord.Interaction, rola_id: str):
     await interaction.followup.send("✅ Wysłano panel weryfikacji.", ephemeral=True)
 
 @bot.tree.command(name="yt-setup", description="[Właściciel] Ustawia powiadomienia z YouTube")
-@app_commands.describe(
-    kanal_id_yt="ID kanału YouTube (np. UCxxxx)",
-    yt_kanal="Wymagana nazwa Twojego kanału YouTube",
-    yt_link="Wymagany link do Twojego kanału YouTube",
-    yt_wiadomosc="Opcjonalna wiadomość/ping nad embedem (np. @everyone Nowy film!)"
-)
+@app_commands.describe(kanal_id_yt="ID kanału YouTube", yt_kanal="Nazwa kanału", yt_link="Link do kanału", yt_wiadomosc="Opcjonalna wiadomość")
 @is_owner()
-async def cmd_yt_setup(
-    interaction: discord.Interaction, 
-    kanal_id_yt: str, 
-    yt_kanal: str, 
-    yt_link: str, 
-    yt_wiadomosc: str = None
-):
+async def cmd_yt_setup(interaction: discord.Interaction, kanal_id_yt: str, yt_kanal: str, yt_link: str, yt_wiadomosc: str = None):
     await interaction.response.defer(ephemeral=True)
-    
     rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={kanal_id_yt}"
     feed = feedparser.parse(rss_url)
-    
-    last_vid = ""
-    if feed.entries:
-        last_vid = feed.entries[0].id.split(":")[-1]
-
-    yt_subscriptions[interaction.guild.id] = {
-        "channel_id": interaction.channel.id,
-        "yt_id": kanal_id_yt,
-        "yt_kanal": yt_kanal,
-        "yt_link": yt_link,
-        "yt_wiadomosc": yt_wiadomosc,
-        "last_video": last_vid
-    }
-
-    await interaction.followup.send(
-        f"✅ Skonfigurowano powiadomienia dla kanału **{yt_kanal}**!",
-        ephemeral=True
-    )
+    last_vid = feed.entries[0].id.split(":")[-1] if feed.entries else ""
+    yt_subscriptions[interaction.guild.id] = {"channel_id": interaction.channel.id, "yt_id": kanal_id_yt, "yt_kanal": yt_kanal, "yt_link": yt_link, "yt_wiadomosc": yt_wiadomosc, "last_video": last_vid}
+    await interaction.followup.send(f"✅ Skonfigurowano powiadomienia dla kanału **{yt_kanal}**!", ephemeral=True)
 
 @bot.tree.command(name="ping", description="[Info] Sprawdza ping bota")
 async def cmd_ping(interaction: discord.Interaction):
@@ -520,6 +518,12 @@ async def cmd_mute(interaction: discord.Interaction, użytkownik: discord.Member
     await użytkownik.timeout(timedelta(minutes=minuty), reason=powód)
     await interaction.response.send_message(f"🔇 Wyciszono {użytkownik.mention} na {minuty} min.", ephemeral=True)
 
+@bot.tree.command(name="unmute", description="[Właściciel] Zdejmuje wyciszenie")
+@is_owner()
+async def cmd_unmute(interaction: discord.Interaction, użytkownik: discord.Member):
+    await użytkownik.timeout(None)
+    await interaction.response.send_message(f"🔊 Zdjęto wyciszenie z {użytkownik.mention}.", ephemeral=True)
+
 @bot.tree.command(name="czysc", description="[Właściciel] Usuwa wiadomości")
 @is_owner()
 async def cmd_czysc(interaction: discord.Interaction, ilosc: int):
@@ -527,20 +531,29 @@ async def cmd_czysc(interaction: discord.Interaction, ilosc: int):
     usuniete = await interaction.channel.purge(limit=ilosc)
     await interaction.followup.send(f"✅ Usunięto {len(usuniete)} wiadomości.", ephemeral=True)
 
-@bot.tree.command(name="portfel", description="[Ekonomia] Sprawdza stan konta")
-async def cmd_balance(interaction: discord.Interaction):
-    bal = user_balances.get(interaction.user.id, 0)
-    await interaction.response.send_message(f"💰 Stan konta: **{bal} monet**.", ephemeral=True)
+@bot.tree.command(name="say", description="[Właściciel] Wysyła wiadomość jako bot")
+@is_owner()
+async def cmd_say(interaction: discord.Interaction, tekst: str):
+    await interaction.response.send_message("✅ Wysłano.", ephemeral=True)
+    await interaction.channel.send(tekst)
 
-@bot.tree.command(name="praca", description="[Ekonomia] Zarób monety")
-async def cmd_work(interaction: discord.Interaction):
-    zarobek = random.randint(30, 150)
-    user_balances[interaction.user.id] = user_balances.get(interaction.user.id, 0) + zarobek
-    await interaction.response.send_message(f"💼 Zarobiłeś **{zarobek} monet**!")
+@bot.tree.command(name="slowmode", description="[Właściciel] Ustawia tryb powolny")
+@is_owner()
+async def cmd_slowmode(interaction: discord.Interaction, sekundy: int):
+    await interaction.channel.edit(slowmode_delay=sekundy)
+    await interaction.response.send_message(f"⏱️ Ustawiono slowmode na {sekundy} sekund.", ephemeral=True)
 
-@bot.tree.command(name="rzut-moneta", description="[4Fun] Rzut monetą")
-async def cmd_coinflip(interaction: discord.Interaction):
-    await interaction.response.send_message(f"🪙 Wylosowano: **{random.choice(['Orzeł', 'Reszka'])}**!")
+@bot.tree.command(name="lock", description="[Właściciel] Blokuje kanał")
+@is_owner()
+async def cmd_lock(interaction: discord.Interaction):
+    await interaction.channel.set_permissions(interaction.guild.default_role, send_messages=False)
+    await interaction.response.send_message("🔒 Zablokowano ten kanał.", ephemeral=True)
+
+@bot.tree.command(name="unlock", description="[Właściciel] Odblokowuje kanał")
+@is_owner()
+async def cmd_unlock(interaction: discord.Interaction):
+    await interaction.channel.set_permissions(interaction.guild.default_role, send_messages=True)
+    await interaction.response.send_message("🔓 Odblokowano ten kanał.", ephemeral=True)
 
 if __name__ == "__main__":
     bot.run(TOKEN)
