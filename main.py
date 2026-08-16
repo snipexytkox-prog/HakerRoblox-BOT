@@ -125,7 +125,7 @@ class CennikPanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik_dzikshop", emoji="📄")
+    @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik_hakerolandia", emoji="📄")
     async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
         cennik_tekst = (
             "🖥️ **ZAMÓW SWÓJ SERWER**\n"
@@ -161,19 +161,7 @@ class CennikPanelView(ui.View):
             "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
         )
         embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
-        
-        # Widok z przyciskiem "Odrzuć tę wiadomość" (usuwa wiadomość ephemeral u użytkownika)
-        view = ui.View()
-        dismiss_button = ui.Button(label="Odrzuć tę wiadomość", style=discord.ButtonStyle.danger, emoji="❌")
-        
-        async def dismiss_callback(i: discord.Interaction):
-            await i.response.defer()
-            await i.delete_original_response()
-
-        dismiss_button.callback = dismiss_callback
-        view.add_item(dismiss_button)
-
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
@@ -472,7 +460,7 @@ async def cmd_cennik(interaction: discord.Interaction):
 async def cmd_cennik_setup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     embed = discord.Embed(
-        title="DZIK SHOP — CENNIK",
+        title="HAKEROLANDIA — CENNIK",
         description=(
             "W tym miejscu możesz przeglądać **cennik wszystkich produktów** dostępnych w naszym sklepie.\n\n"
             "Chcesz zobaczyć cennik? — Użyj tego przycisku aby zobaczyć produkty."
