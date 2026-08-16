@@ -527,11 +527,7 @@ async def cmd_regulamin(interaction: discord.Interaction):
 async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = None):
     await interaction.response.defer(ephemeral=True)
     opis = (
-        "🖥️ **ZAMÓW SWÓJ SERWER**\n**HAKEROLANDIA**\n\n"
-        "⚠️ **UWAGA!**\nZamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
-        "🟢 **START — 19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby\n• Zabezpieczenia\n• Własne preferencje\n\n"
-        "🔵 **BASIC — 39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep\n• Selfrole\n• Invite Logger\n• Lobby + statystyki\n• Zabezpieczenia\n\n"
-        "🟣 **PREMIUM — 69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Logi + statystyki\n• Zaawansowane zabezpieczenia\n• Lobby + regulamin\n• Pomoc w rozwoju serwera\n\n"
+        "⚠️ **UWAGA**\nCENNIK ZNAJDUJE SIĘ NA #cennik !\n\n"
         "💳 **PŁATNOŚĆ**\nBLIK • Revolut\n\n⏱️ Realizacja do 48h\n\n⭐ Po odbiorze możesz zostawić opinię!\n\n"
         "---------------------------------------------\n"
         "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
