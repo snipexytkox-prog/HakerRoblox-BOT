@@ -14,7 +14,7 @@ GUILD_ID = int(GUILD_ID_STR) if GUILD_ID_STR else 0
 OWNER_ID_STR = os.getenv("OWNER_ID")
 OWNER_ID = int(OWNER_ID_STR) if OWNER_ID_STR else 0
 
-trade_blocks = set() # Przechowuje ID użytkowników z zablokowanym tradem (/off_trade)
+trade_blocks = set() 
 yt_subscriptions = {}
 
 def is_owner():
@@ -158,9 +158,9 @@ class CennikPanelView(ui.View):
             "BLIK • Revolut\n"
             "⏱️ Realizacja do 48h\n\n"
             "⭐ Po odbiorze możesz zostawić opinię!\n\n"
-            "━━━━━━━━━━━━━━━━━━ 
-            🔥 HAKEROLANDIA 
-            Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
+            "---------------------------------------------\n"
+            "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+            "---------------------------------------------"
         )
         embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
         await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -457,7 +457,9 @@ async def cmd_cennik(interaction: discord.Interaction):
         "BLIK • Revolut\n"
         "⏱️ Realizacja do 48h\n\n"
         "⭐ Po odbiorze możesz zostawić opinię!\n\n"
-        "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
+        "---------------------------------------------\n"
+        "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+        "---------------------------------------------"
     )
     embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
     await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -531,7 +533,10 @@ async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = 
         "🟢 **START — 19,99 zł**\n• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby\n• Zabezpieczenia\n• Własne preferencje\n\n"
         "🔵 **BASIC — 39,99 zł**\n• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep\n• Selfrole\n• Invite Logger\n• Lobby + statystyki\n• Zabezpieczenia\n\n"
         "🟣 **PREMIUM — 69,99 zł**\n• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Logi + statystyki\n• Zaawansowane zabezpieczenia\n• Lobby + regulamin\n• Pomoc w rozwoju serwera\n\n"
-        "💳 **PŁATNOŚĆ**\nBLIK • Revolut\n\n⏱️ Realizacja do 48h\n\n⭐ Po odbiorze możesz zostawić opinię!\n\n━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
+        "💳 **PŁATNOŚĆ**\nBLIK • Revolut\n\n⏱️ Realizacja do 48h\n\n⭐ Po odbiorze możesz zostawić opinię!\n\n"
+        "---------------------------------------------\n"
+        "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+        "---------------------------------------------"
     )
     embed = discord.Embed(description=opis, color=discord.Color.blurple())
     if obrazek_url:
