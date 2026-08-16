@@ -37,6 +37,7 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(WyborOfertyView())
         self.add_view(TicketCloseView())
         self.add_view(OpiniePanelView())
+        self.add_view(CennikPanelView())
         
         check_youtube_videos.start()
 
@@ -119,7 +120,61 @@ async def on_member_join(member: discord.Member):
     except discord.Forbidden:
         pass
 
-# --- 1. SYSTEM SKLEPU I FORMULARZ ZAMÓWIENIA ---
+# --- 1. SYSTEM SKLEPU I CENNIKA ---
+class CennikPanelView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik_dzikshop", emoji="📄")
+    async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
+        cennik_tekst = (
+            "🖥️ **ZAMÓW SWÓJ SERWER**\n"
+            "**HAKEROLANDIA**\n\n"
+            "⚠️ **UWAGA!**\n"
+            "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
+            "🟢 **START — 19,99 zł**\n"
+            "• Max 10 kategorii / 30 kanałów\n"
+            "• Podstawowe rangi\n"
+            "• Lobby\n"
+            "• Zabezpieczenia\n"
+            "• Własne preferencje\n\n"
+            "🔵 **BASIC — 39,99 zł**\n"
+            "• Max 20 kategorii / 50 kanałów\n"
+            "• Rangi użytkowników i administracji\n"
+            "• Ekonomia + sklep\n"
+            "• Selfrole\n"
+            "• Invite Logger\n"
+            "• Lobby + statystyki\n"
+            "• Zabezpieczenia\n\n"
+            "🟣 **PREMIUM — 69,99 zł**\n"
+            "• Nielimitowane kategorie i kanały\n"
+            "• Rozbudowane rangi\n"
+            "• Ekonomia + sklep\n"
+            "• Logi + statystyki\n"
+            "• Zaawansowane zabezpieczenia\n"
+            "• Lobby + regulamin\n"
+            "• Pomoc w rozwoju serwera\n\n"
+            "💳 **PŁATNOŚĆ**\n"
+            "BLIK • Revolut\n"
+            "⏱️ Realizacja do 48h\n\n"
+            "⭐ Po odbiorze możesz zostawić opinię!\n\n"
+            "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
+        )
+        embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
+        
+        # Widok z przyciskiem "Odrzuć tę wiadomość" (usuwa wiadomość ephemeral u użytkownika)
+        view = ui.View()
+        dismiss_button = ui.Button(label="Odrzuć tę wiadomość", style=discord.ButtonStyle.danger, emoji="❌")
+        
+        async def dismiss_callback(i: discord.Interaction):
+            await i.response.defer()
+            await i.delete_original_response()
+
+        dismiss_button.callback = dismiss_callback
+        view.add_item(dismiss_button)
+
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_wyjsciowa: float):
         super().__init__(title="Potrzebne informacje")
@@ -204,56 +259,6 @@ class MainPanelView(ui.View):
             color=discord.Color.green(),
         )
         await interaction.response.send_message(embed=embed, view=WyborOfertyView(), ephemeral=True)
-
-    @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik", emoji="📄")
-    async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
-        cennik_tekst = (
-            "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-            "**HAKEROLANDIA**\n\n"
-            "⚠️ **UWAGA!**\n"
-            "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
-            "🟢 **START — 19,99 zł**\n"
-            "• Max 10 kategorii / 30 kanałów\n"
-            "• Podstawowe rangi\n"
-            "• Lobby\n"
-            "• Zabezpieczenia\n"
-            "• Własne preferencje\n\n"
-            "🔵 **BASIC — 39,99 zł**\n"
-            "• Max 20 kategorii / 50 kanałów\n"
-            "• Rangi użytkowników i administracji\n"
-            "• Ekonomia + sklep\n"
-            "• Selfrole\n"
-            "• Invite Logger\n"
-            "• Lobby + statystyki\n"
-            "• Zabezpieczenia\n\n"
-            "🟣 **PREMIUM — 69,99 zł**\n"
-            "• Nielimitowane kategorie i kanały\n"
-            "• Rozbudowane rangi\n"
-            "• Ekonomia + sklep\n"
-            "• Logi + statystyki\n"
-            "• Zaawansowane zabezpieczenia\n"
-            "• Lobby + regulamin\n"
-            "• Pomoc w rozwoju serwera\n\n"
-            "💳 **PŁATNOŚĆ**\n"
-            "BLIK • Revolut\n"
-            "⏱️ Realizacja do 48h\n\n"
-            "⭐ Po odbiorze możesz zostawić opinię!\n\n"
-            "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
-        )
-        embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
-        
-        # Widok z przyciskiem "Odrzuć tę wiadomość" (usuwa wiadomość ephemeral u użytkownika)
-        view = ui.View()
-        dismiss_button = ui.Button(label="Odrzuć tę wiadomość", style=discord.ButtonStyle.danger, emoji="❌")
-        
-        async def dismiss_callback(i: discord.Interaction):
-            await i.response.defer()
-            await i.delete_original_response()
-
-        dismiss_button.callback = dismiss_callback
-        view.add_item(dismiss_button)
-
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 # --- 2. SYSTEM TICKETÓW ---
 class TicketCloseView(ui.View):
@@ -462,46 +467,20 @@ async def cmd_cennik(interaction: discord.Interaction):
     embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="cennik-setup", description="[Właściciel] Wysyła stały panel cennika na kanał")
+@bot.tree.command(name="cennik-setup", description="[Właściciel] Wysyła interaktywny panel cennika z przyciskiem na kanał")
 @is_owner()
 async def cmd_cennik_setup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
-    cennik_tekst = (
-        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-        "**HAKEROLANDIA**\n\n"
-        "⚠️ **UWAGA!**\n"
-        "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
-        "🟢 **START — 19,99 zł**\n"
-        "• Max 10 kategorii / 30 kanałów\n"
-        "• Podstawowe rangi\n"
-        "• Lobby\n"
-        "• Zabezpieczenia\n"
-        "• Własne preferencje\n\n"
-        "🔵 **BASIC — 39,99 zł**\n"
-        "• Max 20 kategorii / 50 kanałów\n"
-        "• Rangi użytkowników i administracji\n"
-        "• Ekonomia + sklep\n"
-        "• Selfrole\n"
-        "• Invite Logger\n"
-        "• Lobby + statystyki\n"
-        "• Zabezpieczenia\n\n"
-        "🟣 **PREMIUM — 69,99 zł**\n"
-        "• Nielimitowane kategorie i kanały\n"
-        "• Rozbudowane rangi\n"
-        "• Ekonomia + sklep\n"
-        "• Logi + statystyki\n"
-        "• Zaawansowane zabezpieczenia\n"
-        "• Lobby + regulamin\n"
-        "• Pomoc w rozwoju serwera\n\n"
-        "💳 **PŁATNOŚĆ**\n"
-        "BLIK • Revolut\n"
-        "⏱️ Realizacja do 48h\n\n"
-        "⭐ Po odbiorze możesz zostawić opinię!\n\n"
-        "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
+    embed = discord.Embed(
+        title="DZIK SHOP — CENNIK",
+        description=(
+            "W tym miejscu możesz przeglądać **cennik wszystkich produktów** dostępnych w naszym sklepie.\n\n"
+            "Chcesz zobaczyć cennik? — Użyj tego przycisku aby zobaczyć produkty."
+        ),
+        color=discord.Color.green()
     )
-    embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
-    await interaction.channel.send(embed=embed)
-    await interaction.followup.send("✅ Wysłano panel cennika na kanał.", ephemeral=True)
+    await interaction.channel.send(embed=embed, view=CennikPanelView())
+    await interaction.followup.send("✅ Wysłano interaktywny panel cennika na kanał.", ephemeral=True)
 
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
