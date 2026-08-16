@@ -41,11 +41,12 @@ class ZaawansowanyBot(commands.Bot):
         
         check_youtube_videos.start()
 
+        # Usunięto copy_global_to, aby komendy nie duplikowały się na serwerze
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
-            self.tree.copy_global_to(guild=guild)
+            self.tree.clear_commands(guild=guild) # Czyszczenie starego śmietnika z duplikatami
             await self.tree.sync(guild=guild)
-            print("✅ Zsynchronizowano komendy dla serwera testowego!")
+            print("✅ Zsynchronizowano unikalne komendy dla serwera testowego!")
         else:
             await self.tree.sync()
 
