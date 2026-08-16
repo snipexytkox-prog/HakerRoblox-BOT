@@ -128,8 +128,7 @@ class CennikPanelView(ui.View):
     @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik_hakerolandia", emoji="📄")
     async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
         cennik_tekst = (
-            "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-            "**HAKEROLANDIA**\n\n"
+            "📄 **CENNIK HAKEROLANDIA**\n\n"
             "⚠️ **UWAGA!**\n"
             "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
             "🟢 **START — 19,99 zł**\n"
@@ -427,8 +426,7 @@ async def cmd_profil(interaction: discord.Interaction, nick_gracza: discord.Memb
 @bot.tree.command(name="cennik", description="[Sklep] Wyświetla oficjalny cennik usług Hakerolandia")
 async def cmd_cennik(interaction: discord.Interaction):
     cennik_tekst = (
-        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-        "**HAKEROLANDIA**\n\n"
+        "📄 **CENNIK HAKEROLANDIA**\n\n"
         "⚠️ **UWAGA!**\n"
         "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
         "🟢 **START — 19,99 zł**\n"
