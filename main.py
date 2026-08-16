@@ -158,7 +158,7 @@ class CennikPanelView(ui.View):
             "⏱️ Realizacja do 48h\n\n"
             "⭐ Po odbiorze możesz zostawić opinię!\n\n"
             "---------------------------------------------\n"
-            "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+            "🔥 HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
             "---------------------------------------------"
         )
         embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
@@ -426,8 +426,7 @@ async def cmd_profil(interaction: discord.Interaction, nick_gracza: discord.Memb
 @bot.tree.command(name="cennik", description="[Sklep] Wyświetla oficjalny cennik usług Hakerolandia")
 async def cmd_cennik(interaction: discord.Interaction):
     cennik_tekst = (
-        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-        "**HAKEROLANDIA**\n\n"
+        "📄 **CENNIK HAKEROLANDIA**\n"
         "⚠️ **UWAGA!**\n"
         "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
         "🟢 **START — 19,99 zł**\n"
@@ -457,7 +456,7 @@ async def cmd_cennik(interaction: discord.Interaction):
         "⏱️ Realizacja do 48h\n\n"
         "⭐ Po odbiorze możesz zostawić opinię!\n\n"
         "---------------------------------------------\n"
-        "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+        "🔥 HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
         "---------------------------------------------"
     )
     embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
@@ -527,8 +526,7 @@ async def cmd_regulamin(interaction: discord.Interaction):
 async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = None):
     await interaction.response.defer(ephemeral=True)
     opis = (
-        "⚠️ **UWAGA**\n"
-        "CENNIK ZNAJDUJE SIĘ NA #cennik !\n\n"
+        "🖥️ *ZAMÓW SWÓJ SERWER**\n"
         "💳 **PŁATNOŚĆ**\n"
         "BLIK • Revolut\n\n"
         "⏱️ Realizacja do 48h\n\n"
