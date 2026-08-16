@@ -128,7 +128,8 @@ class CennikPanelView(ui.View):
     @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik_hakerolandia", emoji="📄")
     async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
         cennik_tekst = (
-            "**📄 CENNIK HAKEROLANDIA**\n"
+            "🖥️ **ZAMÓW SWÓJ SERWER**\n"
+            "**HAKEROLANDIA**\n\n"
             "⚠️ **UWAGA!**\n"
             "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
             "🟢 **START — 19,99 zł**\n"
@@ -158,7 +159,7 @@ class CennikPanelView(ui.View):
             "⏱️ Realizacja do 48h\n\n"
             "⭐ Po odbiorze możesz zostawić opinię!\n\n"
             "---------------------------------------------\n"
-            "🔥 HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+            "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
             "---------------------------------------------"
         )
         embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
@@ -365,9 +366,9 @@ class OpiniePanelView(ui.View):
 
     @ui.button(label="Wystaw Opinię", style=discord.ButtonStyle.success, custom_id="przycisk_wystaw_opinie", emoji="⭐")
     async def open_opinie_modal(self, interaction: discord.Interaction, button: ui.Button):
-        has_klient = any(role.name.lower() == "klient" for role in interaction.user.roles)
+        has_klient = any(role.name == "⭐ • Klient" for role in interaction.user.roles)
         if not has_klient:
-            await interaction.response.send_message("❌ Nie masz uprawnień! Tylko osoby z rangą **Klient** mogą wystawiać opinie.", ephemeral=True)
+            await interaction.response.send_message("❌ Nie masz uprawnień! Tylko osoby z rangą **⭐ • Klient** mogą wystawiać opinie.", ephemeral=True)
             return
         
         await interaction.response.send_modal(OpinieModal())
@@ -426,7 +427,8 @@ async def cmd_profil(interaction: discord.Interaction, nick_gracza: discord.Memb
 @bot.tree.command(name="cennik", description="[Sklep] Wyświetla oficjalny cennik usług Hakerolandia")
 async def cmd_cennik(interaction: discord.Interaction):
     cennik_tekst = (
-        "📄 **CENNIK HAKEROLANDIA**\n"
+        "🖥️ **ZAMÓW SWÓJ SERWER**\n"
+        "**HAKEROLANDIA**\n\n"
         "⚠️ **UWAGA!**\n"
         "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
         "🟢 **START — 19,99 zł**\n"
@@ -456,7 +458,7 @@ async def cmd_cennik(interaction: discord.Interaction):
         "⏱️ Realizacja do 48h\n\n"
         "⭐ Po odbiorze możesz zostawić opinię!\n\n"
         "---------------------------------------------\n"
-        "🔥 HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+        "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
         "---------------------------------------------"
     )
     embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
@@ -479,9 +481,9 @@ async def cmd_cennik_setup(interaction: discord.Interaction):
 
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
-    has_klient = any(role.name.lower() == "klient" for role in interaction.user.roles)
+    has_klient = any(role.name == "⭐ • Klient" for role in interaction.user.roles)
     if not has_klient:
-        await interaction.response.send_message("❌ Nie masz uprawnień! Tylko osoby z rangą **Klient** mogą wystawiać opinie.", ephemeral=True)
+        await interaction.response.send_message("❌ Nie masz uprawnień! Tylko osoby z rangą **⭐ • Klient** mogą wystawiać opinie.", ephemeral=True)
         return
         
     await interaction.response.send_modal(OpinieModal())
@@ -526,7 +528,8 @@ async def cmd_regulamin(interaction: discord.Interaction):
 async def cmd_wyslij_panel(interaction: discord.Interaction, obrazek_url: str = None):
     await interaction.response.defer(ephemeral=True)
     opis = (
-        "🖥️ *ZAMÓW SWÓJ SERWER**\n"
+        "⚠️ **UWAGA**\n"
+        "CENNIK ZNAJDUJE SIĘ NA #cennik !\n\n"
         "💳 **PŁATNOŚĆ**\n"
         "BLIK • Revolut\n\n"
         "⏱️ Realizacja do 48h\n\n"
