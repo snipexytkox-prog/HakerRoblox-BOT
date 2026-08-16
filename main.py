@@ -128,10 +128,9 @@ class CennikPanelView(ui.View):
     @ui.button(label="Zobacz cennik", style=discord.ButtonStyle.primary, custom_id="przycisk_zobacz_cennik_hakerolandia", emoji="📄")
     async def show_pricing(self, interaction: discord.Interaction, button: ui.Button):
         cennik_tekst = (
-            "🖥️ **ZAMÓW SWÓJ SERWER**\n"
-            "**HAKEROLANDIA**\n\n"
+            "**📄 CENNIK HAKEROLANDIA**\n\n"
             "⚠️ **UWAGA!**\n"
-            "Zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
+            "Wszystkie zamówienia realizujemy **PO KOLEI** — zgodnie z kolejnością wpłat. ❤️\n\n"
             "🟢 **START — 19,99 zł**\n"
             "• Max 10 kategorii / 30 kanałów\n"
             "• Podstawowe rangi\n"
@@ -159,7 +158,7 @@ class CennikPanelView(ui.View):
             "⏱️ Realizacja do 48h\n\n"
             "⭐ Po odbiorze możesz zostawić opinię!\n\n"
             "---------------------------------------------\n"
-            "🔥HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
+            "🔥 HAKEROLANDIA - Twój pomysł, nasza realizacja.\n"
             "---------------------------------------------"
         )
         embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
