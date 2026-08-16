@@ -20,7 +20,7 @@ yt_subscriptions = {}
 # 1. Baza kodów polecających tworzonych przez użytkowników: { kod_str: {"owner_id": int, "uzycia": int, "punkty": float} }
 kody_polecajace = {}
 
-# 2. Baza oficjalnych kodów rabatowych (zarządzana przez admina): { kod_str: {"procent_znizki": float} }
+# 2. Baza oficjalnych kodów rabatowych (zarządzana przez admina) — 5% zniżki:
 kody_rabatowe = {
     "HAKERROBLOX": {"procent_znizki": 5.0},
     "HAKER15": {"procent_znizki": 5.0}
@@ -48,6 +48,7 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(OpiniePanelView())
         self.add_view(CennikPanelView())
         self.add_view(KodyPolecajacePanelView())
+        self.add_view(PlatnosciPanelView())
         
         check_youtube_videos.start()
 
@@ -174,37 +175,68 @@ class CennikPanelView(ui.View):
         embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+
+# --- 1A. SYSTEM PŁATNOŚCI ---
+class PlatnosciPanelView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="Zapłać przez Tipply (BLIK / Revolut)", style=discord.ButtonStyle.link, url="https://tipply.pl/@hakerroblox", emoji="💳")
+    async def btn_tipply(self, interaction: discord.Interaction, button: ui.Button):
+        pass
+
+    @ui.button(label="Informacje o płatności", style=discord.ButtonStyle.secondary, custom_id="btn_info_platnosci", emoji="ℹ️")
+    async def btn_info(self, interaction: discord.Interaction, button: ui.Button):
+        tekst = (
+            "💳 **JAK DOKONAĆ PŁATNOŚCI?**\n\n"
+            "1. Kliknij przycisk **Zapłać przez Tipply**, aby przejść do bezpiecznej strony płatności.\n"
+            "2. Wybierz metodę płatności: **BLIK** lub **Revolut**.\n"
+            "3. Wprowadź kwotę odpowiadającą Twojemu zamówieniu.\n"
+            "4. W treści / wiadomości do wpłaty podaj swój **nick z Discorda**.\n"
+            "5. Po opłaceniu zamówienia prześlij potwierdzenie w odpowiednim tickecie."
+        )
+        embed = discord.Embed(title="ℹ️ Instrukcja Płatności", description=tekst, color=discord.Color.blurple())
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
 class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_baza: float, ilosc: int):
-        super().__init__(title="Potrzebne informacje")
+        super().__init__(title="Formularz zamówienia")
         self.pakiet_nazwa = pakiet_nazwa
         self.cena_baza = cena_baza
         self.ilosc = ilosc
 
-    nick_dc = ui.TextInput(
-        label="TWÓJ NICK NA DISCORDZIE:", 
-        placeholder="Podaj swój nick z discorda", 
-        required=True, 
-        max_length=50
-    )
-    
-    platnosc_text = ui.TextInput(
-        label="METODA PŁATNOŚCI (BLIK / REVOLUT):", 
-        placeholder="Wpisz wybraną metodę płatności", 
+    nick_discord = ui.TextInput(
+        label="JAKI JEST TWÓJ NICK NA DISCORDZIE:", 
+        placeholder="Przykład: hakerekroblox", 
         required=True, 
         max_length=50
     )
 
-    kod_wejsciowy = ui.TextInput(
-        label="KOD RABATOWY LUB POLECAJĄCY:", 
-        placeholder="Wpisz np. Haker15 lub kod gracza", 
+    metoda_platnosci = ui.TextInput(
+        label="METODA PŁATNOŚCI (Wpisz BLIK lub Revolut):", 
+        placeholder="BLIK / Revolut", 
+        required=True, 
+        max_length=20
+    )
+
+    kod_znizkowy = ui.TextInput(
+        label="CZY POSIADASZ KOD ZNIŻKOWY:", 
+        placeholder="HakerRoblox lub Haker15", 
+        required=False, 
+        max_length=30
+    )
+
+    kod_polecajacy = ui.TextInput(
+        label="CZY POSIADASZ KOD POLECAJĄCY:", 
+        placeholder="Wpisz kod", 
         required=False, 
         max_length=30
     )
     
     uwagi = ui.TextInput(
         label="DODATKOWE UWAGI DO ZAMÓWIENIA:", 
-        placeholder="Opisz swoje wymagania.", 
+        placeholder="Zostaw puste, jeśli brak", 
         style=discord.TextStyle.paragraph, 
         required=False, 
         max_length=200
@@ -215,27 +247,29 @@ class ZamowienieModal(ui.Modal):
         
         cena_calkowita = self.cena_baza * self.ilosc
         znizka_info = "Brak"
-        wpisany_kod = self.kod_wejsciowy.value.strip().upper()
-
-        if wpisany_kod:
-            # 1. Sprawdzamy czy to oficjalny kod rabatowy (np. HAKERROBLOX / HAKER15)
-            if wpisany_kod in kody_rabatowe:
-                procent = kody_rabatowe[wpisany_kod]["procent_znizki"]
+        
+        # Sprawdzanie kodu zniżkowego (5% zniżki)
+        wpisany_znizkowy = self.kod_znizkowy.value.strip().upper()
+        if wpisany_znizkowy:
+            if wpisany_znizkowy in kody_rabatowe:
+                procent = kody_rabatowe[wpisany_znizkowy]["procent_znizki"]
                 rabat = cena_calkowita * (procent / 100.0)
                 cena_calkowita -= rabat
-                znizka_info = f"🎁 Kod rabatowy `{wpisany_kod}`: -{procent}% (-{rabat:.2f} zł)"
+                znizka_info = f"🎁 Kod zniżkowy `{wpisany_znizkowy}`: -{procent}% (-{rabat:.2f} zł)"
+            else:
+                znizka_info = f"⚠️ Niepoprawny kod zniżkowy: `{wpisany_znizkowy}`"
 
-            # 2. Sprawdzamy czy to kod polecający użytkownika
-            elif wpisany_kod in kody_polecajace:
+        # Sprawdzanie kodu polecającego
+        wpisany_polecajacy = self.kod_polecajacy.value.strip().upper()
+        if wpisany_polecajacy:
+            if wpisany_polecajacy in kody_polecajace:
                 rabat = cena_calkowita * 0.10
                 cena_calkowita -= rabat
-                znizka_info = f"⭐ Kod polecający `{wpisany_kod}`: -10% (-{rabat:.2f} zł)"
-                
-                # Zliczamy użycie i punkty dla właściciela kodu polecającego
-                kody_polecajace[wpisany_kod]["uzycia"] += 1
-                kody_polecajace[wpisany_kod]["punkty"] += 5.0 
+                znizka_info += f"\n⭐ Kod polecający `{wpisany_polecajacy}`: -10%"
+                kody_polecajace[wpisany_polecajacy]["uzycia"] += 1
+                kody_polecajace[wpisany_polecajacy]["punkty"] += 5.0 
             else:
-                await interaction.followup.send("⚠️ Podany kod nie istnieje lub jest niepoprawny (zamówienie przyjęto bez zniżki).", ephemeral=True)
+                znizka_info += f"\n⚠️ Niepoprawny kod polecający: `{wpisany_polecajacy}`"
 
         embed = discord.Embed(
             title="🟢 POTWIERDZENIE ZAMÓWIENIA", 
@@ -244,9 +278,9 @@ class ZamowienieModal(ui.Modal):
         )
         embed.add_field(name="📦 Wybrana usługa:", value=f"• **{self.ilosc}x {self.pakiet_nazwa}**", inline=False)
         embed.add_field(name="💰 Cena całkowita:", value=f"**{cena_calkowita:.2f} zł**", inline=False)
-        embed.add_field(name="🏷️ Rabat / Kod:", value=znizka_info, inline=False)
-        embed.add_field(name="👤 Nick Discord:", value=self.nick_dc.value, inline=True)
-        embed.add_field(name="💳 Płatność:", value=self.platnosc_text.value, inline=True)
+        embed.add_field(name="🏷️ Zniżki / Kody:", value=znizka_info, inline=False)
+        embed.add_field(name="👤 Nick Discord:", value=self.nick_discord.value, inline=True)
+        embed.add_field(name="💳 Płatność:", value=self.metoda_platnosci.value, inline=True)
         
         if self.uwagi.value:
             embed.add_field(name="📝 Dodatkowe uwagi:", value=self.uwagi.value, inline=False)
@@ -255,6 +289,7 @@ class ZamowienieModal(ui.Modal):
         view.add_item(ui.Button(label="Opłać zamówienie", url="https://tipply.pl/@hakerroblox", style=discord.ButtonStyle.link, emoji="💳"))
         
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+
 
 class IloscSelect(ui.Select):
     def __init__(self, pakiet_nazwa: str, cena_baza: float):
@@ -268,6 +303,7 @@ class IloscSelect(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         ilosc = int(self.values[0])
+        # Otwieramy bezpośrednio modal formularza po wybraniu sztuk
         await interaction.response.send_modal(ZamowienieModal(self.pakiet_nazwa, self.cena_baza, ilosc))
 
 class IloscSelectView(ui.View):
@@ -320,7 +356,7 @@ class StworzKodModal(ui.Modal):
     def __init__(self):
         super().__init__(title="Stwórz kod polecający")
 
-    nazwa_kodu = ui.TextInput(label="NAZWA KODU:", placeholder="Np. KODGRACZA", required=True, max_length=20)
+    nazwa_kodu = ui.TextInput(label="NAZWA KODU:", placeholder="Przykład: HakerRoblox", required=True, max_length=20)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -525,7 +561,7 @@ class OpiniePanelView(ui.View):
 @bot.tree.command(name="pomoc", description="[Główne] Wyświetla pełną listę wszystkich dostępnych komend")
 async def cmd_pomoc(interaction: discord.Interaction):
     embed = discord.Embed(title="📚 PANEL POMOCI — HAKEROLANDIA", description="Oto kategorie dostępnych komend w bocie:", color=discord.Color.blurple())
-    embed.add_field(name="🛡️ Moderacja i Sklep", value="`/ban`, `/kick`, `/mute`, `/unmute`, `/slowmode`, `/lock`, `/unlock`, `/czysc`, `/say`, `/trade`, `/off_trade`, `/profil`, `/cennik`, `/cennik-setup`, `/kody-setup`", inline=False)
+    embed.add_field(name="🛡️ Moderacja i Sklep", value="`/ban`, `/kick`, `/mute`, `/unmute`, `/slowmode`, `/lock`, `/unlock`, `/czysc`, `/say`, `/trade`, `/off_trade`, `/profil`, `/cennik`, `/cennik-setup`, `/kody-setup`, `/platnosci-setup`", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="trade", description="[Trade] Wysyła ofertę wymiany do innego gracza")
@@ -641,6 +677,22 @@ async def cmd_kody_setup(interaction: discord.Interaction):
     embed = discord.Embed(title="HAKEROLANDIA — KODY POLECAJĄCE", description=opis, color=discord.Color.green())
     await interaction.channel.send(embed=embed, view=KodyPolecajaceView())
     await interaction.followup.send("✅ Wysłano panel kodów polecających na kanał.", ephemeral=True)
+
+@bot.tree.command(name="platnosci-setup", description="[Właściciel] Wysyła panel metod płatności (BLIK / Revolut)")
+@is_owner()
+async def cmd_platnosci_setup(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    opis = (
+        "💳 **METODY PŁATNOŚCI W HAKEROLANDIA**\n\n"
+        "Za wszystkie zamówienia i usługi możesz wygodnie i bezpiecznie zapłacić za pomocą:\n"
+        "🟩 **BLIK**\n"
+        "🟦 **Revolut**\n\n"
+        "Kliknij w poniższy przycisk, aby przejść do strony płatności i sfinalizować transakcję. "
+        "Po opłaceniu pamiętaj, aby poinformować administrację w tickecie!"
+    )
+    embed = discord.Embed(title="💳 PŁATNOŚCI", description=opis, color=discord.Color.from_rgb(30, 144, 255))
+    await interaction.channel.send(embed=embed, view=PlatnosciPanelView())
+    await interaction.followup.send("✅ Wysłano panel płatności na kanał.", ephemeral=True)
 
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
