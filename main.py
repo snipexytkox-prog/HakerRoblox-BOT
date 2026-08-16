@@ -158,7 +158,9 @@ class CennikPanelView(ui.View):
             "BLIK • Revolut\n"
             "⏱️ Realizacja do 48h\n\n"
             "⭐ Po odbiorze możesz zostawić opinię!\n\n"
-            "━━━━━━━━━━━━━━━━━━ 🔥 HAKEROLANDIA Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
+            "━━━━━━━━━━━━━━━━━━ 
+            🔥 HAKEROLANDIA 
+            Twój pomysł. Nasza realizacja. ━━━━━━━━━━━━━━━━━━"
         )
         embed = discord.Embed(description=cennik_tekst, color=discord.Color.green())
         await interaction.response.send_message(embed=embed, ephemeral=True)
