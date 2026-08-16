@@ -17,6 +17,15 @@ OWNER_ID = int(OWNER_ID_STR) if OWNER_ID_STR else 0
 trade_blocks = set() 
 yt_subscriptions = {}
 
+# 1. Baza kodów polecających tworzonych przez użytkowników: { kod_str: {"owner_id": int, "uzycia": int, "punkty": float} }
+kody_polecajace = {}
+
+# 2. Baza oficjalnych kodów rabatowych (zarządzana przez admina): { kod_str: {"procent_znizki": float} }
+kody_rabatowe = {
+    "HakerRoblox": {"procent_znizki": 5.0}  # Twój kod rabatowy na 5% zniżki (możesz dopisywać kolejne)
+    "Haker15": {"procent_znizki": 5.0}  # Twój kod rabatowy na 5% zniżki (możesz dopisywać kolejne)
+}
+
 def is_owner():
     async def predicate(interaction: discord.Interaction):
         if OWNER_ID != 0 and interaction.user.id != OWNER_ID:
@@ -38,6 +47,7 @@ class ZaawansowanyBot(commands.Bot):
         self.add_view(TicketCloseView())
         self.add_view(OpiniePanelView())
         self.add_view(CennikPanelView())
+        self.add_view(KodyPolecajacePanelView())
         
         check_youtube_videos.start()
 
@@ -168,7 +178,7 @@ class ZamowienieModal(ui.Modal):
     def __init__(self, pakiet_nazwa: str, cena_baza: float, ilosc: int):
         super().__init__(title="Potrzebne informacje")
         self.pakiet_nazwa = pakiet_nazwa
-        self.cena_calkowita = cena_baza * ilosc
+        self.cena_baza = cena_baza
         self.ilosc = ilosc
 
     nick_dc = ui.TextInput(
@@ -184,6 +194,13 @@ class ZamowienieModal(ui.Modal):
         required=True, 
         max_length=50
     )
+
+    kod_wejsciowy = ui.TextInput(
+        label="KOD RABATOWY LUB POLECAJĄCY:", 
+        placeholder="Wpisz np. HakerRoblox lub kod gracza", 
+        required=False, 
+        max_length=30
+    )
     
     uwagi = ui.TextInput(
         label="DODATKOWE UWAGI DO ZAMÓWIENIA:", 
@@ -196,13 +213,39 @@ class ZamowienieModal(ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
+        cena_calkowita = self.cena_baza * self.ilosc
+        znizka_info = "Brak"
+        wpisany_kod = self.kod_wejsciowy.value.strip().upper()
+
+        if wpisany_kod:
+            # 1. Sprawdzamy czy to oficjalny kod rabatowy (np. HAKERROBLOX)
+            if wpisany_kod in kody_rabatowe:
+                procent = kody_rabatowe[wpisany_kod]["procent_znizki"]
+                rabat = cena_calkowita * (procent / 100.0)
+                cena_calkowita -= rabat
+                znizka_info = f"🎁 Kod rabatowy `{wpisany_kod}`: -{procent}% (-{rabat:.2f} zł)"
+
+            # 2. Sprawdzamy czy to kod polecający użytkownika
+            elif wpisany_kod in kody_polecajace:
+                # Standardowy rabat 10% przy kodzie polecającym gracza (możesz zmienić)
+                rabat = cena_calkowita * 0.10
+                cena_calkowita -= rabat
+                znizka_info = f"⭐ Kod polecający `{wpisany_kod}`: -10% (-{rabat:.2f} zł)"
+                
+                # Zliczamy użycie i punkty dla właściciela kodu polecającego
+                kody_polecajace[wpisany_kod]["uzycia"] += 1
+                kody_polecajace[wpisany_kod]["punkty"] += 5.0 
+            else:
+                await interaction.followup.send("⚠️ Podany kod nie istnieje lub jest niepoprawny (zamówienie przyjęto bez zniżki).", ephemeral=True)
+
         embed = discord.Embed(
             title="🟢 POTWIERDZENIE ZAMÓWIENIA", 
             description="Twoje zgłoszenie zamówienia zostało zapisane.", 
             color=discord.Color.green()
         )
         embed.add_field(name="📦 Wybrana usługa:", value=f"• **{self.ilosc}x {self.pakiet_nazwa}**", inline=False)
-        embed.add_field(name="💰 Cena całkowita:", value=f"**{self.cena_calkowita:.2f} zł**", inline=False)
+        embed.add_field(name="💰 Cena całkowita:", value=f"**{cena_calkowita:.2f} zł**", inline=False)
+        embed.add_field(name="🏷️ Rabat / Kod:", value=znizka_info, inline=False)
         embed.add_field(name="👤 Nick Discord:", value=self.nick_dc.value, inline=True)
         embed.add_field(name="💳 Płatność:", value=self.platnosc_text.value, inline=True)
         
@@ -222,7 +265,7 @@ class IloscSelect(ui.Select):
             discord.SelectOption(label="1 Sztuka", description=f"Cena: {cena_baza:.2f} zł", emoji="1️⃣", value="1"),
             discord.SelectOption(label="2 Sztuki", description=f"Cena: {cena_baza * 2:.2f} zł", emoji="2️⃣", value="2"),
         ]
-        super().__init__(placeholder="Wybierz liczbę sztuk...", min_values=1, max_values=1, options=opcje)
+        super().__init__(placeholder="Wybierz liczbę sztuk (max 2)...", min_values=1, max_values=1, options=opcje)
 
     async def callback(self, interaction: discord.Interaction):
         ilosc = int(self.values[0])
@@ -271,6 +314,90 @@ class MainPanelView(ui.View):
             color=discord.Color.green(),
         )
         await interaction.response.send_message(embed=embed, view=WyborOfertyView(), ephemeral=True)
+
+
+# --- 1B. SYSTEM KODÓW POLECAJĄCYCH (DLA UŻYTKOWNIKÓW) ---
+class StworzKodModal(ui.Modal):
+    def __init__(self):
+        super().__init__(title="Stwórz kod polecający")
+
+    nazwa_kodu = ui.TextInput(label="NAZWA KODU:", placeholder="Np. KODGRACZA", required=True, max_length=20)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        kod = self.nazwa_kodu.value.strip().upper()
+        user_id = interaction.user.id
+
+        # Blokada: czy kod jest w bazach administracyjnych
+        if kod in kody_rabatowe:
+            await interaction.followup.send("❌ Ta nazwa jest zarezerwowana dla oficjalnego kodu rabatowego sklepu!", ephemeral=True)
+            return
+
+        # Sprawdzenie czy użytkownik ma już swój kod
+        for k, v in kody_polecajace.items():
+            if v["owner_id"] == user_id:
+                await interaction.followup.send(f"❌ Masz już aktywny kod polecający: **{k}**! Możesz posiadać tylko jeden kod.", ephemeral=True)
+                return
+
+        if kod in kody_polecajace:
+            await interaction.followup.send("❌ Ten kod jest już zajęty przez innego użytkownika. Wybierz inną nazwę.", ephemeral=True)
+            return
+
+        kody_polecajace[kod] = {"owner_id": user_id, "uzycia": 0, "punkty": 0.0}
+        await interaction.followup.send(f"✅ Pomyślnie utworzono Twój kod polecający: **{kod}**!", ephemeral=True)
+
+class KodyPolecajaceView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="Stwórz kod", style=discord.ButtonStyle.success, custom_id="btn_stworz_kod", emoji="➕")
+    async def btn_stworz(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.send_modal(StworzKodModal())
+
+    @ui.button(label="Statystyki", style=discord.ButtonStyle.primary, custom_id="btn_staty_kod", emoji="📊")
+    async def btn_staty(self, interaction: discord.Interaction, button: ui.Button):
+        user_id = interaction.user.id
+        znaleziony_kod = None
+        dane = None
+        for k, v in kody_polecajace.items():
+            if v["owner_id"] == user_id:
+                znaleziony_kod = k
+                dane = v
+                break
+
+        if not znaleziony_kod:
+            await interaction.response.send_message("❌ Nie masz jeszcze swojego kodu polecającego! Kliknij najpierw przycisk `➕ Stwórz kod`.", ephemeral=True)
+            return
+
+        embed = discord.Embed(
+            title=f"📊 STATYSTYKI KODU: {znaleziony_kod}",
+            description=f"Oto statystyki Twojego kodu polecającego:",
+            color=discord.Color.blurple()
+        )
+        embed.add_field(name="📦 Liczba użyć:", value=str(dane["uzycia"]), inline=True)
+        embed.add_field(name="⭐ Zebrane punkty:", value=f"{dane['punkty']:.1f}", inline=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @ui.button(label="Usuń kod", style=discord.ButtonStyle.danger, custom_id="btn_usun_kod", emoji="🗑️")
+    async def btn_usun(self, interaction: discord.Interaction, button: ui.Button):
+        user_id = interaction.user.id
+        znaleziony_kod = None
+        for k, v in kody_polecajace.items():
+            if v["owner_id"] == user_id:
+                znaleziony_kod = k
+                break
+
+        if not znaleziony_kod:
+            await interaction.response.send_message("❌ Nie posiadasz żadnego kodu polecającego do usunięcia.", ephemeral=True)
+            return
+
+        del kody_polecajace[znaleziony_kod]
+        await interaction.response.send_message(f"🗑️ Twój kod polecający **{znaleziony_kod}** został pomyślnie usunięty.", ephemeral=True)
+
+class KodyPolecajacePanelView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
 
 # --- 2. SYSTEM TICKETÓW ---
 class TicketCloseView(ui.View):
@@ -401,7 +528,7 @@ class OpiniePanelView(ui.View):
 @bot.tree.command(name="pomoc", description="[Główne] Wyświetla pełną listę wszystkich dostępnych komend")
 async def cmd_pomoc(interaction: discord.Interaction):
     embed = discord.Embed(title="📚 PANEL POMOCI — HAKEROLANDIA", description="Oto kategorie dostępnych komend w bocie:", color=discord.Color.blurple())
-    embed.add_field(name="🛡️ Moderacja i Trade", value="`/ban`, `/kick`, `/mute`, `/unmute`, `/slowmode`, `/lock`, `/unlock`, `/czysc`, `/say`, `/trade`, `/off_trade`, `/profil`, `/cennik`, `/cennik-setup`", inline=False)
+    embed.add_field(name="🛡️ Moderacja i Sklep", value="`/ban`, `/kick`, `/mute`, `/unmute`, `/slowmode`, `/lock`, `/unlock`, `/czysc`, `/say`, `/trade`, `/off_trade`, `/profil`, `/cennik`, `/cennik-setup`, `/kody-setup`", inline=False)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="trade", description="[Trade] Wysyła ofertę wymiany do innego gracza")
@@ -500,6 +627,23 @@ async def cmd_cennik_setup(interaction: discord.Interaction):
     )
     await interaction.channel.send(embed=embed, view=CennikPanelView())
     await interaction.followup.send("✅ Wysłano interaktywny panel cennika na kanał.", ephemeral=True)
+
+@bot.tree.command(name="kody-setup", description="[Właściciel] Wysyła panel zarządzania kodami polecającymi")
+@is_owner()
+async def cmd_kody_setup(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    opis = (
+        "W tym miejscu możesz **zarządzać swoim kodem polecającym**, utworzyć go, sprawdzać "
+        "jego statystyki bądź go usunąć.\n\n"
+        "System kodów polecających działa na zasadzie **systemu lojalnościowego**, gdzie za każde "
+        "zamówienie przez kod polecający, otrzymujesz punkty do wykorzystania w sklepie.\n\n"
+        "➕ **Stwórz nowy kod polecający.** — Użyj tego przycisku aby utworzyć swój kod polecający.\n"
+        "📊 **Sprawdź statystyki kodów.** — Użyj tego przycisku aby zobaczyć statystyki swojego kodu polecającego.\n"
+        "🗑️ **Usuń kod polecający.** — Użyj tego przycisku aby usunąć swój kod polecający."
+    )
+    embed = discord.Embed(title="HAKEROLANDIA — KODY POLECAJĄCE", description=opis, color=discord.Color.green())
+    await interaction.channel.send(embed=embed, view=KodyPolecajaceView())
+    await interaction.followup.send("✅ Wysłano panel kodów polecających na kanał.", ephemeral=True)
 
 @bot.tree.command(name="opinie", description="[Użytkownik] Wystawia opinię o wykonanej usłudze przez formularz")
 async def cmd_opinie(interaction: discord.Interaction):
