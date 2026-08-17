@@ -174,6 +174,7 @@ class WyborIlosciSelect(ui.View):
 
     @ui.select(
         placeholder="Wybierz ilość sztuk...",
+        custom_id="select_ilosc_sztuk",
         options=[
             discord.SelectOption(label="1 szt.", value="1"),
             discord.SelectOption(label="2 szt.", value="2"),
@@ -196,6 +197,7 @@ class GlowneMenuPakietow(ui.View):
 
     @ui.select(
         placeholder="Wybierz pakiet serwera do zakupu...",
+        custom_id="select_pakiet_serwera",
         options=[
             discord.SelectOption(label="START (19,99 zł)", description="Max 10 kategorii / 30 kanałów, Lobby, Zabezpieczenia", value="START|19.99"),
             discord.SelectOption(label="BASIC (39,99 zł)", description="Max 20 kategorii / 50 kanałów, Ekonomia + sklep", value="BASIC|39.99"),
