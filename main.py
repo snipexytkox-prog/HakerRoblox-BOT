@@ -87,7 +87,7 @@ class OpiniePanelView(ui.View):
         
         if not rola_klient or rola_klient not in interaction.user.roles:
             await interaction.response.send_message(
-                "❌ **Brak uprawnień!** Nie posiadasz wymaganej rangi **⭐• Klient**, aby móc wystawić opinię.",
+                "❌ **Brak uprawnień!** Nie posiadasz wymaganej rangi **⭐ • Klient**, aby móc wystawić opinię.",
                 ephemeral=True
             )
             return
