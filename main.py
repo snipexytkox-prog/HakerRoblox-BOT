@@ -83,7 +83,7 @@ class OpiniePanelView(ui.View):
 
     @ui.button(label="Wystaw Opinię", style=discord.ButtonStyle.green, custom_id="btn_hakerolandia_wystaw_opinie", emoji="⭐")
     async def wystaw_opinie_btn(self, interaction: discord.Interaction, button: ui.Button):
-        rola_klient = discord.utils.get(interaction.guild.roles, name=" ⭐ • Klient")
+        rola_klient = discord.utils.get(interaction.guild.roles, name="⭐ • Klient")
         
         if not rola_klient or rola_klient not in interaction.user.roles:
             await interaction.response.send_message(
