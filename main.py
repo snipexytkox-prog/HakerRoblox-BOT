@@ -38,7 +38,65 @@ class CaptchaView(ui.View):
 
 
 # ==============================================================================
-# 2. FORMULARZ ZAMÓWIENIA (MODAL) Z UWAGAMI
+# 2. FORMULARZ OPINII (MODAL)
+# ==============================================================================
+class OpiniaModal(ui.Modal, title="HAKEROLANDIA — WYSTAW OPINIĘ"):
+    def __init__(self):
+        super().__init__()
+
+    ocena = ui.TextInput(
+        label="OCENA (np. ⭐⭐⭐⭐⭐ / 5/5):",
+        placeholder="Wpisz ocenę gwiazdkową lub cyfrową",
+        required=True,
+        max_length=20
+    )
+    
+    tresc = ui.TextInput(
+        label="TREŚĆ OPINII:",
+        placeholder="Napisz, co sądzisz o realizacji zamówienia...",
+        style=discord.TextStyle.paragraph,
+        required=True,
+        max_length=500
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="⭐ NOWA OPINIA O HAKEROLANDIA",
+            color=discord.Color.gold(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.add_field(name="Autor", value=interaction.user.mention, inline=True)
+        embed.add_field(name="Ocena", value=self.ocena.value, inline=True)
+        embed.add_field(name="Treść", value=self.tresc.value, inline=False)
+        embed.set_footer(text="Dziękujemy za opinię! ❤️")
+
+        await interaction.channel.send(embed=embed)
+        await interaction.response.send_message("✅ Twoja opinia została pomyślnie opublikowana! Dziękujemy!", ephemeral=True)
+
+
+# ==============================================================================
+# 3. WIDOK PANELU OPINII (PRZYCISK)
+# ==============================================================================
+class OpiniePanelView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="Wystaw Opinię", style=discord.ButtonStyle.green, custom_id="btn_hakerolandia_wystaw_opinie", emoji="⭐")
+    async def wystaw_opinie_btn(self, interaction: discord.Interaction, button: ui.Button):
+        rola_klient = discord.utils.get(interaction.guild.roles, name=" ⭐ • Klient")
+        
+        if not rola_klient or rola_klient not in interaction.user.roles:
+            await interaction.response.send_message(
+                "❌ **Brak uprawnień!** Nie posiadasz wymaganej rangi **⭐• Klient**, aby móc wystawić opinię.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.send_modal(OpiniaModal())
+
+
+# ==============================================================================
+# 4. FORMULARZ ZAMÓWIENIA (MODAL) Z UWAGAMI
 # ==============================================================================
 class ZamowienieModal(ui.Modal, title="HAKEROLANDIA — FORMULARZ ZAMÓWIENIA"):
     def __init__(self, produkt: str, cena_jednostkowa: float, ilosc: int):
@@ -48,8 +106,8 @@ class ZamowienieModal(ui.Modal, title="HAKEROLANDIA — FORMULARZ ZAMÓWIENIA"):
         self.ilosc = ilosc
 
     discord_nick = ui.TextInput(
-        label="JAKI JEST TWÓJ DISCORD / NICK:",
-        placeholder="np. NazwaUzytkownika",
+        label="JAKI JEST TWÓJ DISCORD NICK:",
+        placeholder="np. HakerPro",
         required=True,
         max_length=100
     )
@@ -113,7 +171,7 @@ class ZamowienieModal(ui.Modal, title="HAKEROLANDIA — FORMULARZ ZAMÓWIENIA"):
 
 
 # ==============================================================================
-# 3. WIDOK PODSUMOWANIA (Z PRZYCISKIEM DO PŁATNOŚCI)
+# 5. WIDOK PODSUMOWANIA (Z PRZYCISKIEM DO PŁATNOŚCI)
 # ==============================================================================
 class PodsumowanieZakupuView(ui.View):
     def __init__(self, produkt, ilosc, cena, nick, platnosc, uwagi, rabat, polecajacy):
@@ -127,15 +185,14 @@ class PodsumowanieZakupuView(ui.View):
         self.rabat = rabat
         self.polecajacy = polecajacy
 
-        # Przycisk prowadzący do płatności (np. HotPay)
         self.add_item(ui.Button(
-            label="Dokonaj płatności przez HotPay", 
+            label="Dokonaj płatności przez Tipply", 
             style=discord.ButtonStyle.link, 
-            url="https://hotpay.pl", 
+            url="https://tipply.pl/@hakerroblox", 
             emoji="💲"
         ))
 
-    @ui.button(label="✅ Opłaciłem / Utwórz ticket", style=discord.ButtonStyle.green, custom_id="btn_hakerolandia_ticket", row=1)
+    @ui.button(label="✅ Opłaciłem - Utwórz ticket", style=discord.ButtonStyle.green, custom_id="btn_hakerolandia_ticket", row=1)
     async def finalizuj_zamowienie(self, interaction: discord.Interaction, button: ui.Button):
         guild = interaction.guild
         user = interaction.user
@@ -177,7 +234,7 @@ class PodsumowanieZakupuView(ui.View):
 
 
 # ==============================================================================
-# 4. WYBÓR ILOŚCI SZTUK
+# 6. WYBÓR ILOŚCI SZTUK
 # ==============================================================================
 class WyborIlosciSelectView(ui.View):
     def __init__(self, produkt, cena):
@@ -191,9 +248,6 @@ class WyborIlosciSelectView(ui.View):
         options=[
             discord.SelectOption(label="1 szt.", value="1"),
             discord.SelectOption(label="2 szt.", value="2"),
-            discord.SelectOption(label="3 szt.", value="3"),
-            discord.SelectOption(label="4 szt.", value="4"),
-            discord.SelectOption(label="5 szt.", value="5"),
         ]
     )
     async def select_ilosc(self, interaction: discord.Interaction, select: ui.Select):
@@ -204,7 +258,7 @@ class WyborIlosciSelectView(ui.View):
 
 
 # ==============================================================================
-# 5. WYBÓR PAKIETU (PRODUKTU) Z MENU ROZWIJANEGO
+# 7. WYBÓR PAKIETU (PRODUKTU) Z MENU ROZWIJANEGO
 # ==============================================================================
 class WyborProduktuSelectView(ui.View):
     def __init__(self):
@@ -233,7 +287,7 @@ class WyborProduktuSelectView(ui.View):
 
 
 # ==============================================================================
-# 6. PANEL GŁÓWNY (PRZYCISK "ZŁÓŻ ZAMÓWIENIE")
+# 8. PANEL GŁÓWNY (PRZYCISK "ZŁÓŻ ZAMÓWIENIE")
 # ==============================================================================
 class PanelGlownyView(ui.View):
     def __init__(self):
@@ -250,7 +304,7 @@ class PanelGlownyView(ui.View):
 
 
 # ==============================================================================
-# 7. GŁÓWNA KLASA BOTA
+# 9. GŁÓWNA KLASA BOTA
 # ==============================================================================
 class HakerolandiaBot(commands.Bot):
     def __init__(self):
@@ -261,6 +315,7 @@ class HakerolandiaBot(commands.Bot):
         logger.info("Ładowanie stałych widoków Hakerolandia...")
         self.add_view(PanelGlownyView())
         self.add_view(CaptchaView())
+        self.add_view(OpiniePanelView())  # Rejestracja widoku opinii odporna na restarty bota
         
         guild_id = os.getenv("GUILD_ID")
         if guild_id:
@@ -281,7 +336,7 @@ bot = HakerolandiaBot()
 
 
 # ==============================================================================
-# 8. KOMENDY SLASH
+# 10. KOMENDY SLASH
 # ==============================================================================
 @bot.tree.command(name="wyslij-panel", description="Wysyła główny panel składania zamówień Hakerolandia")
 async def wyslij_panel(interaction: discord.Interaction):
@@ -298,17 +353,17 @@ async def wyslij_panel(interaction: discord.Interaction):
     
     embed.add_field(
         name="🟢 START — 19,99 zł",
-        value="• Max 10 kategorii / 30 kanałów\n• Podstawowe rangi\n• Lobby\n• Zabezpieczenia\n• Własne preferencje",
+        value="• Oferta na kanale cennik.",
         inline=False
     )
     embed.add_field(
         name="🔵 BASIC — 39,99 zł",
-        value="• Max 20 kategorii / 50 kanałów\n• Rangi użytkowników i administracji\n• Ekonomia + sklep\n• Selfrole\n• Invite Logger\n• Lobby + statystyki\n• Zabezpieczenia",
+        value="• Oferta na kanale cennik.",
         inline=False
     )
     embed.add_field(
         name="🟣 PREMIUM — 69,99 zł",
-        value="• Nielimitowane kategorie i kanały\n• Rozbudowane rangi\n• Ekonomia + sklep\n• Logi + statystyki\n• Zaawansowane zabezpieczenia\n• Lobby + regulamin\n• Pomoc w rozwoju serwera",
+        value="• Oferta na kanale cennik.",
         inline=False
     )
 
@@ -359,6 +414,40 @@ async def cennik(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
+@bot.tree.command(name="wyslij-opinie", description="Wysyła panel wystawiania opinii (Tylko Admin)")
+async def wyslij_opinie(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ Brak uprawnień administratora!", ephemeral=True)
+        return
+
+    embed = discord.Embed(
+        title="HAKEROLANDIA × WYSTAW NAM OPINIĘ",
+        description=(
+            "» **Wystawiając opinię** pokazujesz innym, jak przebiegła Twoja obsługa.\n"
+            "» **Gorąco prosimy** o jej wystawienie, buduje to nasze zaufanie.\n\n"
+            "» Zrobisz to klikając **poniższy przycisk**."
+        ),
+        color=discord.Color.blurple()
+    )
+
+    await interaction.channel.send(embed=embed, view=OpiniePanelView())
+    await interaction.response.send_message("✅ Pomyślnie wysłano panel opinii!", ephemeral=True)
+
+
+@bot.tree.command(name="opinie", description="Otwiera panel wystawiania opinii (Wymagana ranga ⭐• Klient)")
+async def opinie(interaction: discord.Interaction):
+    rola_klient = discord.utils.get(interaction.guild.roles, name="⭐• Klient")
+    
+    if not rola_klient or rola_klient not in interaction.user.roles:
+        await interaction.response.send_message(
+            "❌ **Brak uprawnień!** Nie posiadasz wymaganej rangi **⭐• Klient**, aby móc wystawić opinię.",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_modal(OpiniaModal())
+
+
 @bot.tree.command(name="wyslij-weryfikacje", description="Wysyła panel weryfikacji CAPTCHA")
 async def wyslij_weryfikacje(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.administrator:
@@ -397,7 +486,7 @@ async def zakoncz(interaction: discord.Interaction):
 
 
 # ==============================================================================
-# 9. START APLIKACJI
+# 11. START APLIKACJI
 # ==============================================================================
 def main():
     token = os.getenv("DISCORD_TOKEN")
