@@ -41,8 +41,8 @@ class ZamowienieModal(ui.Modal, title="HAKEROLANDIA — Formularz Zamówienia"):
     )
     
     platnosc = ui.TextInput(
-        label="JAKĄ METODĄ PŁATNOŚCI CHCESZ ZAPŁACIć:",
-        placeholder="BLIK",
+        label="JAKĄ METODĄ PŁATNOŚCI CHCESZ ZAPŁACIĆ:",
+        placeholder="BLIK / Tipply",
         required=True,
         max_length=100
     )
@@ -85,12 +85,13 @@ class ZamowienieModal(ui.Modal, title="HAKEROLANDIA — Formularz Zamówienia"):
             f"📦 **Pakiet:** {self.pakiet} (**{self.cena}**)\n"
             f"👤 **Nick:** {self.nick_dc.value}\n"
             f"💳 **Płatność:** {self.platnosc.value}\n\n"
-            f"Kliknij poniższy przycisk **„Opłać zamówienie”**, aby utworzyć ticket i przejść do realizacji!"
+            f"Kliknij poniższy przycisk, aby przejść do **Tipply** i opłacić zamówienie. "
+            f"Jednocześnie zostanie utworzony dla Ciebie prywatny ticket!"
         )
         await interaction.response.send_message(tekst, view=view, ephemeral=True)
 
 
-# ==================== 3. PRZYCISK "OPŁAĆ ZAMÓWIENIE" ====================
+# ==================== 3. PRZYCISK LINKU DO TIPPLY + TICKET ====================
 class OplacZamowienieView(ui.View):
     def __init__(self, pakiet, cena, nick, platnosc, rabat, polecajacy, uwagi):
         super().__init__(timeout=300)
@@ -102,7 +103,15 @@ class OplacZamowienieView(ui.View):
         self.polecajacy = polecajacy
         self.uwagi = uwagi
 
-    @ui.button(label="💳 Opłać zamówienie", style=discord.ButtonStyle.green, emoji="⚡")
+        # Dodajemy przycisk przekierowujący bezpośrednio do Twojego Tipply
+        self.add_item(ui.Button(
+            label="💳 Zapłać przez Tipply", 
+            style=discord.ButtonStyle.link, 
+            url="https://tipply.pl/@hakerroblox", 
+            emoji="⚡"
+        ))
+
+    @ui.button(label="✅ Stworzyłem ticket / opłaciłem", style=discord.ButtonStyle.green, custom_id="btn_potwierdz_ticket", row=1)
     async def oplac_button(self, interaction: discord.Interaction, button: ui.Button):
         guild = interaction.guild
         user = interaction.user
@@ -130,13 +139,13 @@ class OplacZamowienieView(ui.View):
 
         await ticket_channel.send(
             content=f"🔔 **NOWE ZAMÓWIENIE!** Witaj {user.mention}!\n"
-                    f"Wyślij tutaj dowód wpłaty (screen/potwierdzenie), a administracja wkrótce zrealizuje zamówienie.\n"
+                    f"Jeśli opłaciłeś przez Tipply, wyślij tutaj screena / potwierdzenie wpłaty. Administracja wkrótce zrealizuje zamówienie!\n"
                     f"*(Gdy administracja skończy, użyje komendy `/zakoncz`)*",
             embed=embed
         )
 
         await interaction.response.edit_message(
-            content=f"✅ Płatność zainicjowana! Utworzono dla Ciebie prywatny ticket: {ticket_channel.mention}",
+            content=f"✅ Gotowe! Utworzono dla Ciebie prywatny ticket: {ticket_channel.mention}",
             view=None
         )
 
